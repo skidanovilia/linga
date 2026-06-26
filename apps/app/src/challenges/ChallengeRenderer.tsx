@@ -45,7 +45,7 @@ export function ChallengeRenderer({ challenge, onResult, onNext }: ChallengeRend
       </div>
       <CheckBar
         status={status}
-        canCheck={status === 'idle' && def.isAnswerable(value)}
+        canCheck={status === 'idle' && def.isAnswerable(value, challenge.data)}
         correctAnswer={def.describeAnswer(challenge.data)}
         onCheck={handleCheck}
         onNext={onNext}

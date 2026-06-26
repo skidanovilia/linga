@@ -5,13 +5,13 @@
 
 export type ChallengeType = 'fill_choice' | 'order' | 'fill_type'
 
-/** fill_choice — pick the missing word from buttons. */
+/** fill_choice — fill one or more blanks by picking words from buttons. */
 export interface FillChoiceData {
-  /** Sentence to complete; contains the `___` gap marker. */
+  /** Sentence to complete; contains one or more `___` gap markers. */
   sentence: string
-  /** The correct option. */
-  answer: string
-  /** All selectable options (includes `answer`); shuffled only for display. */
+  /** The correct word for each `___`, in order (one entry per gap). */
+  answer: string[]
+  /** All selectable options (includes every `answer` word); shuffled only for display. */
   options: string[]
 }
 

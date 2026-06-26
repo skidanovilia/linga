@@ -1,29 +1,29 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 interface SentenceGapProps {
   sentence: string
-  /** Rendered in place of the `___` gap. */
-  children: ReactNode
+  /** Rendered in place of each `___` gap, by gap index (left to right). */
+  renderGap: (index: number) => ReactNode
 }
 
 const GAP = '___'
 
-/** Renders a sentence, replacing the `___` marker with `children` (the slot). */
-export function SentenceGap({ sentence, children }: SentenceGapProps) {
-  const [before, after] = splitOnGap(sentence)
+/** Renders a sentence, replacing every `___` marker with `renderGap(index)`. */
+export function SentenceGap({ sentence, renderGap }: SentenceGapProps) {
+  // N gaps split the sentence into N+1 text segments; interleave a slot between them.
+  const segments = sentence.split(GAP)
   return (
     <p className="whitespace-pre-line text-center text-2xl leading-relaxed">
-      <span>{before}</span>
-      <span className="mx-1 inline-flex min-w-[3rem] items-center justify-center align-middle">
-        {children}
-      </span>
-      <span>{after}</span>
+      {segments.map((segment, i) => (
+        <Fragment key={i}>
+          <span>{segment}</span>
+          {i < segments.length - 1 && (
+            <span className="mx-1 inline-flex min-w-[3rem] items-center justify-center align-middle">
+              {renderGap(i)}
+            </span>
+          )}
+        </Fragment>
+      ))}
     </p>
   )
-}
-
-function splitOnGap(sentence: string): [string, string] {
-  const i = sentence.indexOf(GAP)
-  if (i === -1) return [sentence, '']
-  return [sentence.slice(0, i), sentence.slice(i + GAP.length)]
 }

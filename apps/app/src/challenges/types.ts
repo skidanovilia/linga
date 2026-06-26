@@ -3,7 +3,7 @@ import type { Challenge, ChallengeType } from '../types/domain'
 
 /** Runtime shape of the user's working answer, per challenge type. */
 export interface AnswerByType {
-  fill_choice: string
+  fill_choice: string[]
   order: string[]
   fill_type: string
 }
@@ -34,7 +34,7 @@ export interface ChallengeDef<T extends ChallengeType> {
   /** Initial working answer. */
   emptyAnswer: AnswerOf<T>
   /** Whether the current answer is complete enough to enable "Check". */
-  isAnswerable: (value: AnswerOf<T>) => boolean
+  isAnswerable: (value: AnswerOf<T>, data: DataOf<T>) => boolean
   /** Pure correctness check. */
   check: (value: AnswerOf<T>, data: DataOf<T>) => boolean
   /** Human-readable correct answer, revealed when the user is wrong. */

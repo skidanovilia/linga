@@ -1,6 +1,5 @@
 import { Link, useLoaderData } from 'react-router'
 import type { Unit } from '../types/domain'
-import { RUN_SIZE } from '../config'
 
 export function UnitsListPage() {
   const units = useLoaderData() as Unit[]
@@ -24,13 +23,13 @@ export function UnitsListPage() {
                 to={`/units/${unit.id}`}
                 className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
               >
-                Challenges · {Math.min(unit.challenges.length, RUN_SIZE.challenges)}
+                Challenges
               </Link>
               <Link
                 to={`/units/${unit.id}/memo`}
                 className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold transition hover:border-slate-300"
               >
-                Memo · {Math.min(unit.vocab.length, RUN_SIZE.vocab)}
+                Memo
               </Link>
             </div>
           </li>

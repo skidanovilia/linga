@@ -10,9 +10,9 @@ export function ChallengePage() {
   const session = useSession()
 
   const index = Number(indexParam)
-  const total = unit.challenges.length
+  const total = session.challenges.length
   const challenge =
-    Number.isInteger(index) && index >= 0 ? unit.challenges[index] : undefined
+    Number.isInteger(index) && index >= 0 ? session.challenges[index] : undefined
 
   // Out-of-range / non-numeric index → jump to the result screen.
   if (!challenge) {

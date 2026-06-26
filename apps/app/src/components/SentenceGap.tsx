@@ -12,7 +12,7 @@ const GAP = '___'
 export function SentenceGap({ sentence, children }: SentenceGapProps) {
   const [before, after] = splitOnGap(sentence)
   return (
-    <p className="text-center text-2xl leading-relaxed">
+    <p className="whitespace-pre-line text-center text-2xl leading-relaxed">
       <span>{before}</span>
       <span className="mx-1 inline-flex min-w-[3rem] items-center justify-center align-middle">
         {children}

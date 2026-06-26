@@ -12,5 +12,5 @@ export function UnitSessionLayout() {
   const unit = useLoaderData() as Unit
   const { unitId } = useParams()
 
-  return <SessionProvider key={unitId} total={unit.challenges.length} />
+  return <SessionProvider key={unitId} challenges={unit.challenges} />
 }

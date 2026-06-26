@@ -25,7 +25,7 @@ export function OrderChallenge({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-center text-lg text-slate-500">{data.ru}</p>
+      <p className="whitespace-pre-line text-center text-lg text-slate-500">{data.ru}</p>
 
       {/* Assembled answer line — tap a word to remove it. */}
       <div

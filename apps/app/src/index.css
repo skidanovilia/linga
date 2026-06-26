@@ -8,4 +8,6 @@ body,
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+  /* The memo deck flings cards past the viewport edge; never scroll sideways. */
+  overflow-x: hidden;
 }

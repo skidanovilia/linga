@@ -37,9 +37,19 @@ export type Challenge =
   | { type: 'order'; data: OrderData }
   | { type: 'fill_type'; data: FillTypeData }
 
+/** A single vocabulary pair, used as a memo (flashcard) card. */
+export interface VocabEntry {
+  /** Georgian — shown on the card's back. */
+  ka: string
+  /** Russian — shown on the card's front. */
+  ru: string
+}
+
 export interface Unit {
   /** Stable, authored id used in URLs (e.g. "food-1"). */
   id: string
   title: string
+  /** Word pairs powering the unit's memo-card deck. */
+  vocab: VocabEntry[]
   challenges: Challenge[]
 }

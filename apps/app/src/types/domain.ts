@@ -19,8 +19,9 @@ export interface FillChoiceData {
 export interface OrderData {
   /** The Russian prompt shown on top. */
   ru: string
-  /** The correct, ordered sequence of Georgian words. */
-  answer: string[]
+  /** Accepted orderings of the Georgian words; the answer is correct if it
+   *  matches any one of them. */
+  answer: string[][]
 }
 
 /** fill_type — type the missing word with the keyboard. */

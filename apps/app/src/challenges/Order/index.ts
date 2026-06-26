@@ -8,5 +8,5 @@ export const orderDef: ChallengeDef<'order'> = {
   emptyAnswer: [],
   isAnswerable: (value) => value.length > 0,
   check,
-  describeAnswer: (data) => data.answer.join(' '),
+  describeAnswer: (data) => data.answer[0].join(' '),
 }

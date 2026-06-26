@@ -10,7 +10,7 @@ export function OrderChallenge({
 }: ChallengeComponentProps<'order'>) {
   // Shuffled word bank, stable across re-renders. We track the user's selection
   // by token *index* (not by word) so repeated words stay unambiguous.
-  const tokens = useMemo(() => shuffle(data.answer), [data])
+  const tokens = useMemo(() => shuffle(data.answer[0]), [data])
   const [selected, setSelected] = useState<number[]>([])
 
   const update = (next: number[]) => {

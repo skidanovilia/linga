@@ -1,58 +1,46 @@
 [
   {
-    "id": "food-1",
-    "title": "Урок 5: Еда",
+    "id": "unit-1",
+    "title": "Урок 1: глагол «быть» (ყოფნა)",
+    "vocab": [
+      { "ka": "მე", "ru": "я" },
+      { "ka": "შენ", "ru": "ты" },
+      { "ka": "ის", "ru": "он / она / то" },
+      { "ka": "ჩვენ", "ru": "мы" },
+      { "ka": "თქვენ", "ru": "вы" },
+      { "ka": "ისინი", "ru": "они" },
+      { "ka": "მე ვარ", "ru": "я есть (I am)" },
+      { "ka": "შენ ხარ", "ru": "ты есть (you are)" },
+      { "ka": "ის არის", "ru": "он/она есть (he/she is)" },
+      { "ka": "ჩვენ ვართ", "ru": "мы есть (we are)" },
+      { "ka": "თქვენ ხართ", "ru": "вы есть (you are)" },
+      { "ka": "ისინი არიან", "ru": "они есть (they are)" },
+      { "ka": "აქ", "ru": "здесь" },
+      { "ka": "იქ", "ru": "там" },
+      { "ka": "არაა", "ru": "нет / не есть (isn't)" }
+    ],
     "challenges": [
-      {
-        "type": "fill_choice",
-        "data": {
-          "sentence": "მე ___ მინდა",
-          "answer": "წყალი",
-          "options": ["წყალი", "პური", "ღვინო"]
-        }
-      },
-      {
-        "type": "order",
-        "data": {
-          "ru": "Я хочу воду",
-          "answer": ["მე", "წყალი", "მინდა"]
-        }
-      },
-      {
-        "type": "fill_type",
-        "data": {
-          "sentence": "ეს არის ___",
-          "answer": "პური"
-        }
-      }
-    ]
-  },
-  {
-    "id": "basics-1",
-    "title": "Урок 6: Основы",
-    "challenges": [
-      {
-        "type": "fill_choice",
-        "data": {
-          "sentence": "მე ვარ ___",
-          "answer": "სტუდენტი",
-          "options": ["სტუდენტი", "მასწავლებელი", "ექიმი"]
-        }
-      },
-      {
-        "type": "order",
-        "data": {
-          "ru": "Да, да",
-          "answer": ["კი", "კი"]
-        }
-      },
-      {
-        "type": "fill_type",
-        "data": {
-          "sentence": "ის არის ___",
-          "answer": "მასწავლებელი"
-        }
-      }
+      { "type": "fill_choice", "data": { "sentence": "ის ___ ნინო.", "answer": "არის", "options": ["ვარ", "ხარ", "არის", "არიან"] } },
+      { "type": "fill_choice", "data": { "sentence": "ეს ___ კოტე.", "answer": "არის", "options": ["არის", "ვართ", "ხარ", "ვარ"] } },
+      { "type": "fill_choice", "data": { "sentence": "მე ___ .", "answer": "ვარ", "options": ["ვარ", "ხარ", "არის", "ვართ"] } },
+      { "type": "fill_choice", "data": { "sentence": "შენ ___ ?", "answer": "ხარ", "options": ["ხარ", "ხართ", "ვარ", "არიან"] } },
+      { "type": "fill_choice", "data": { "sentence": "ჩვენ ___ .", "answer": "ვართ", "options": ["ვართ", "ხართ", "ვარ", "არიან"] } },
+      { "type": "fill_choice", "data": { "sentence": "თქვენ ___ ?", "answer": "ხართ", "options": ["ხართ", "ხარ", "ვართ", "არის"] } },
+      { "type": "fill_choice", "data": { "sentence": "ისინი ___ .", "answer": "არიან", "options": ["არიან", "არის", "ვართ", "ხართ"] } },
+      { "type": "fill_choice", "data": { "sentence": "ნანა იქ ___ ?", "answer": "არის", "options": ["არის", "არიან", "ხარ", "ვარ"] } },
+
+      { "type": "fill_type", "data": { "sentence": "მე ___ .", "answer": "ვარ" } },
+      { "type": "fill_type", "data": { "sentence": "შენ ___ ?", "answer": "ხარ" } },
+      { "type": "fill_type", "data": { "sentence": "ის ___ ნინო.", "answer": "არის" } },
+      { "type": "fill_type", "data": { "sentence": "ჩვენ ___ .", "answer": "ვართ" } },
+      { "type": "fill_type", "data": { "sentence": "თქვენ ___ ?", "answer": "ხართ" } },
+      { "type": "fill_type", "data": { "sentence": "ისინი ___ .", "answer": "არიან" } },
+      { "type": "fill_type", "data": { "sentence": "გივი აქ ___ .", "answer": "არაა" } },
+
+      { "type": "order", "data": { "ru": "Она Нино.", "answer": ["ის", "ნინოა"] } },
+      { "type": "order", "data": { "ru": "Это Котэ.", "answer": ["ეს", "კოტეა"] } },
+      { "type": "order", "data": { "ru": "Нана там.", "answer": ["ნანა", "იქაა"] } },
+      { "type": "order", "data": { "ru": "Гиви здесь нет.", "answer": ["გივი", "აქ", "არაა"] } }
     ]
   }
 ]

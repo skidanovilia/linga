@@ -1,0 +1,58 @@
+[
+  {
+    "id": "food-1",
+    "title": "Урок 5: Еда",
+    "challenges": [
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "მე ___ მინდა",
+          "answer": "წყალი",
+          "options": ["წყალი", "პური", "ღვინო"]
+        }
+      },
+      {
+        "type": "order",
+        "data": {
+          "ru": "Я хочу воду",
+          "answer": ["მე", "წყალი", "მინდა"]
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "ეს არის ___",
+          "answer": "პური"
+        }
+      }
+    ]
+  },
+  {
+    "id": "basics-1",
+    "title": "Урок 6: Основы",
+    "challenges": [
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "მე ვარ ___",
+          "answer": "სტუდენტი",
+          "options": ["სტუდენტი", "მასწავლებელი", "ექიმი"]
+        }
+      },
+      {
+        "type": "order",
+        "data": {
+          "ru": "Да, да",
+          "answer": ["კი", "კი"]
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "ის არის ___",
+          "answer": "მასწავლებელი"
+        }
+      }
+    ]
+  }
+]

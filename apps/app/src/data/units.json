@@ -470,6 +470,96 @@
         }
       },
       {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ აქ ვარ.",
+          "answer": [
+            "მეც"
+          ],
+          "options": [
+            "მეც",
+            "შენც",
+            "ჩვენც",
+            "ისიც"
+          ]
+        }
+      },
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ აქ ხარ.",
+          "answer": [
+            "შენც"
+          ],
+          "options": [
+            "შენც",
+            "მეც",
+            "თქვენც",
+            "ისიც"
+          ]
+        }
+      },
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ მენეჯერი არის.",
+          "answer": [
+            "ისიც"
+          ],
+          "options": [
+            "ისიც",
+            "ისინიც",
+            "მეც",
+            "შენც"
+          ]
+        }
+      },
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ იქ ვართ.",
+          "answer": [
+            "ჩვენც"
+          ],
+          "options": [
+            "ჩვენც",
+            "თქვენც",
+            "ისინიც",
+            "მეც"
+          ]
+        }
+      },
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ კარგად ხართ.",
+          "answer": [
+            "თქვენც"
+          ],
+          "options": [
+            "თქვენც",
+            "შენც",
+            "ჩვენც",
+            "ისიც"
+          ]
+        }
+      },
+      {
+        "type": "fill_choice",
+        "data": {
+          "sentence": "___ აქ არიან.",
+          "answer": [
+            "ისინიც"
+          ],
+          "options": [
+            "ისინიც",
+            "ისიც",
+            "ჩვენც",
+            "თქვენც"
+          ]
+        }
+      },
+      {
         "type": "fill_type",
         "data": {
           "sentence": "–თქვენ ქალბატონი მარინა ხართ?\n–დიახ, მე ქალბატონი მარინა ___.",
@@ -649,6 +739,62 @@
         "data": {
           "sentence": "გია: –გამარჯობათ!\nია: –გამარჯობათ!\nგია: –როგორა ___, ქალბატონო ია?\nია: –გმადლობთ, კარგად, თქვენ?",
           "answer": "ხართ"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "მეც აქ ___.",
+          "answer": "ვარ"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "შენც აქ ___.",
+          "answer": "ხარ"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "ისიც აქ ___.",
+          "answer": "არის"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "ჩვენც აქ ___.",
+          "answer": "ვართ"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "თქვენც აქ ___.",
+          "answer": "ხართ"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "ისინიც იქ ___.",
+          "answer": "არიან"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "–მე კარგად ვარ, შენ?\n–___ კარგად ვარ.",
+          "answer": "მეც"
+        }
+      },
+      {
+        "type": "fill_type",
+        "data": {
+          "sentence": "–ჩვენ აქ ვართ.\n–___ აქ ვართ.",
+          "answer": "ჩვენც"
         }
       },
       {

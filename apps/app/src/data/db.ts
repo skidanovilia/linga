@@ -1,33 +1,64 @@
 import type { LoaderFunctionArgs } from 'react-router'
-import type { Challenge, Unit } from '../types/domain'
-import unitsData from './units.json'
+import type { Challenge, Unit, VocabEntry } from '../types/domain'
+import { supabase } from './supabase'
 
-// The bundled JSON acts as our read-only "database" for now. Funnelling every
-// read through this module keeps the source swappable: to move to a real API
-// later, make these functions `async` (fetch(...)) and `await` them in the
-// loaders below — pages and components stay untouched.
-const units = unitsData as unknown as Unit[]
+// The Supabase database is our read-only source for units. Funnelling every
+// read through this module keeps the source swappable: pages and components
+// consume the `Unit` shape these functions return and stay untouched.
 
-export function getUnits(): Unit[] {
-  return units
+// One round-trip per query: pull the unit with its nested vocab + challenges.
+const UNIT_SELECT = 'id, title, position, vocab(ka, ru), challenges(type, data)'
+
+interface UnitRow {
+  id: string
+  title: string
+  position: number
+  vocab: VocabEntry[]
+  challenges: Challenge[]
 }
 
-export function getUnit(id: string): Unit | undefined {
-  return units.find((unit) => unit.id === id)
+// Map a DB row onto the domain `Unit`. Vocab/challenges come back in their
+// natural insertion order (no `position` column on those tables).
+function toUnit(row: UnitRow): Unit {
+  return {
+    id: row.id,
+    title: row.title,
+    vocab: row.vocab.map(({ ka, ru }) => ({ ka, ru })),
+    challenges: row.challenges.map((c) => ({ type: c.type, data: c.data }) as Challenge),
+  }
 }
 
-export function getChallenge(unitId: string, index: number): Challenge | undefined {
-  return getUnit(unitId)?.challenges[index]
+export async function getUnits(): Promise<Unit[]> {
+  const { data, error } = await supabase
+    .from('units')
+    .select(UNIT_SELECT)
+    .order('position')
+  if (error) {
+    throw new Response(error.message, { status: 500 })
+  }
+  return (data as unknown as UnitRow[]).map(toUnit)
+}
+
+export async function getUnit(id: string): Promise<Unit | undefined> {
+  const { data, error } = await supabase
+    .from('units')
+    .select(UNIT_SELECT)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) {
+    throw new Response(error.message, { status: 500 })
+  }
+  return data ? toUnit(data as unknown as UnitRow) : undefined
 }
 
 // --- React Router loaders -------------------------------------------------
 
-export function unitsLoader(): Unit[] {
+export async function unitsLoader(): Promise<Unit[]> {
   return getUnits()
 }
 
-export function unitLoader({ params }: LoaderFunctionArgs): Unit {
-  const unit = getUnit(params.unitId ?? '')
+export async function unitLoader({ params }: LoaderFunctionArgs): Promise<Unit> {
+  const unit = await getUnit(params.unitId ?? '')
   if (!unit) {
     throw new Response('Unit not found', { status: 404 })
   }

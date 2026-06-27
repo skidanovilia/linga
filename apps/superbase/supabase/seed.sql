@@ -1,0 +1,5 @@
+-- Intentionally empty.
+--
+-- Initial data is loaded the same way as any batch import: POST the dataset
+-- (apps/superbase/data/units.json) to the import_units RPC. See the project
+-- README for the exact request.

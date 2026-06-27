@@ -9,6 +9,9 @@
     "dev": "npm run dev -w @linga/app",
     "build": "npm run build -w @linga/app",
     "preview": "npm run preview -w @linga/app",
-    "typecheck": "npm run typecheck -w @linga/app"
+    "typecheck": "npm run typecheck -w @linga/app",
+    "db:start": "npm run start -w @linga/superbase",
+    "db:stop": "npm run stop -w @linga/superbase",
+    "db:reset": "npm run reset -w @linga/superbase"
   }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "@linga/superbase",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "reset": "supabase db reset",
+    "status": "supabase status",
+    "gen:types": "supabase gen types typescript --local > ../app/src/types/database.ts"
+  },
+  "devDependencies": {
+    "supabase": "^2.108.0"
+  }
+}

@@ -1,4 +1,4 @@
-# @linga/superbase
+# @linga/db
 
 Local Supabase database for Linga. Holds all Supabase code: schema migration, the
 batch-import RPC, and the Supabase CLI config. The frontend (`apps/app`) reads data
@@ -21,7 +21,7 @@ Reads are public (anon `SELECT`). Writes happen only through the import RPC belo
 
 ## Run
 
-From this directory (`apps/superbase`):
+From this directory (`apps/db`):
 
 ```bash
 npm run start    # supabase start  — boots Postgres + REST + Studio in Docker

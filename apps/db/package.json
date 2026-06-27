@@ -1,5 +1,5 @@
 {
-  "name": "@linga/superbase",
+  "name": "@linga/db",
   "private": true,
   "version": "0.0.0",
   "scripts": {

@@ -6,3 +6,5 @@ dist
 .DS_Store
 *.log
 .idea
+dev-dist
+*.tsbuildinfo

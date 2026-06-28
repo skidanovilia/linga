@@ -63,7 +63,7 @@ function MemoResult({ result, onRestart }: MemoResultProps) {
         </p>
         <div className="mt-4 flex items-center justify-center gap-8">
           <div>
-            <p className="font-display text-5xl font-black tabular-nums text-bauhaus-blue">
+            <p className="font-display text-5xl font-black tabular-nums text-bauhaus-green">
               {result.known}
             </p>
             <p className="mt-1 font-display text-sm font-bold uppercase tracking-wide text-ink/60">

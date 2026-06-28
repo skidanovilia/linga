@@ -56,7 +56,7 @@ export function MemoDeck({ cards, onComplete }: MemoDeckProps) {
           <span className="font-display text-3xl font-black tabular-nums">{unknown}</span>
           <span className="font-display text-xs font-bold uppercase tracking-wide">Don't know</span>
         </div>
-        <div className="flex items-baseline gap-2 text-bauhaus-blue">
+        <div className="flex items-baseline gap-2 text-bauhaus-green">
           <span className="font-display text-xs font-bold uppercase tracking-wide">Know</span>
           <span className="font-display text-3xl font-black tabular-nums">{known}</span>
         </div>
@@ -95,6 +95,11 @@ export function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-300, 300], [-18, 18])
   const opacity = useTransform(x, [-300, -150, 0, 150, 300], [0, 1, 1, 1, 0])
+  // Live swipe feedback: fades in with the drag and peaks at the commit
+  // threshold, so reaching full color means "releasing now will count". A small
+  // dead zone past 0 keeps a resting card from flashing on a stray pixel.
+  const knowOpacity = useTransform(x, [10, SWIPE_OFFSET], [0, 1])
+  const nopeOpacity = useTransform(x, [-SWIPE_OFFSET, -10], [1, 0])
 
   const handleDragEnd = (_event: PointerEvent, info: PanInfo) => {
     const committed =
@@ -125,6 +130,28 @@ export function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
         flipped={flipped}
         onFlip={() => setFlipped((f) => !f)}
       />
+
+      {/* Drag right = green "Know"; drag left = red "Don't know". Overlays sit
+          above the card (and its 3D flip) and are pointer-transparent, so they
+          never block the drag or the tap-to-flip underneath. */}
+      <motion.div
+        aria-hidden
+        style={{ opacity: knowOpacity }}
+        className="pointer-events-none absolute inset-0 flex items-start justify-center rounded-none border-4 border-bauhaus-green bg-bauhaus-green/20"
+      >
+        <span className="mt-5 -rotate-6 border-2 border-ink bg-bauhaus-green px-4 py-1 font-display text-xl font-black uppercase tracking-tight text-white shadow-hard-sm">
+          Know
+        </span>
+      </motion.div>
+      <motion.div
+        aria-hidden
+        style={{ opacity: nopeOpacity }}
+        className="pointer-events-none absolute inset-0 flex items-start justify-center rounded-none border-4 border-bauhaus-red bg-bauhaus-red/20"
+      >
+        <span className="mt-5 rotate-6 border-2 border-ink bg-bauhaus-red px-4 py-1 font-display text-xl font-black uppercase tracking-tight text-white shadow-hard-sm">
+          Don't know
+        </span>
+      </motion.div>
     </motion.div>
   )
 }

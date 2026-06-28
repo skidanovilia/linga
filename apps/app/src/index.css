@@ -13,6 +13,9 @@
   --color-bauhaus-red: #d02020;
   --color-bauhaus-blue: #1040c0;
   --color-bauhaus-yellow: #f0c020;
+  /* Not a historic Bauhaus primary, but the memo deck's know/don't-know axis is
+     classic green/red (distinct from the challenge correct=blue semantic). */
+  --color-bauhaus-green: #1f9d4d;
   --color-ink: #121212;
   --color-canvas: #f0f0f0;
   --color-muted: #e0e0e0;

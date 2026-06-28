@@ -10,6 +10,7 @@
     "build": "npm run build -w @linga/app",
     "preview": "npm run preview -w @linga/app",
     "typecheck": "npm run typecheck -w @linga/app",
+    "test": "npm run test -w @linga/app",
     "db:start": "npm run start -w @linga/db",
     "db:stop": "npm run stop -w @linga/db",
     "db:reset": "npm run reset -w @linga/db"

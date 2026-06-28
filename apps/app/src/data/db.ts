@@ -7,7 +7,9 @@ import { supabase } from './supabase'
 // consume the `Unit` shape these functions return and stay untouched.
 
 // One round-trip per query: pull the unit with its nested vocab + challenges.
-const UNIT_SELECT = 'id, title, position, vocab(ka, ru), challenges(type, data)'
+// The vocab/challenge `id`s are surfaced because the review shelf keys each
+// item's Leitner box on the content row's stable UUID.
+const UNIT_SELECT = 'id, title, position, vocab(id, ka, ru), challenges(id, type, data)'
 
 interface UnitRow {
   id: string
@@ -18,13 +20,16 @@ interface UnitRow {
 }
 
 // Map a DB row onto the domain `Unit`. Vocab/challenges come back in their
-// natural insertion order (no `position` column on those tables).
+// natural insertion order (no `position` column on those tables) — that order
+// doubles as the "content order" the scheduler introduces new items in.
 function toUnit(row: UnitRow): Unit {
   return {
     id: row.id,
     title: row.title,
-    vocab: row.vocab.map(({ ka, ru }) => ({ ka, ru })),
-    challenges: row.challenges.map((c) => ({ type: c.type, data: c.data }) as Challenge),
+    vocab: row.vocab.map(({ id, ka, ru }) => ({ id, ka, ru })),
+    challenges: row.challenges.map(
+      (c) => ({ id: c.id, type: c.type, data: c.data }) as Challenge,
+    ),
   }
 }
 

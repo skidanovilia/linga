@@ -4,9 +4,13 @@ import { UnitsListPage } from './routes/UnitsListPage'
 import { UnitSessionLayout } from './routes/UnitSessionLayout'
 import { ChallengePage } from './routes/ChallengePage'
 import { ResultPage } from './routes/ResultPage'
+import { CardReviewPage } from './routes/CardReviewPage'
+import { ChallengeReviewPage } from './routes/ChallengeReviewPage'
 import { MemoPage } from './memo/MemoPage'
 import { NotFound } from './routes/NotFound'
 import { Loading } from './routes/Loading'
+import { LoginPage } from './auth/LoginPage'
+import { RequireAuth } from './auth/RequireAuth'
 
 export const router = createBrowserRouter([
   {
@@ -15,7 +19,30 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <Loading />,
     children: [
       { path: '/', element: <Navigate to="/units" replace /> },
+      { path: '/login', element: <LoginPage /> },
       { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
+      // Scheduled spaced-repetition reviews — one route per shelf, signed-in only.
+      {
+        path: '/units/:unitId/review/cards',
+        element: (
+          <RequireAuth>
+            <CardReviewPage />
+          </RequireAuth>
+        ),
+        loader: unitLoader,
+        errorElement: <NotFound />,
+      },
+      {
+        path: '/units/:unitId/review/challenges',
+        element: (
+          <RequireAuth>
+            <ChallengeReviewPage />
+          </RequireAuth>
+        ),
+        loader: unitLoader,
+        errorElement: <NotFound />,
+      },
+      // Free practice — the original per-unit challenge run (never persists).
       {
         id: 'unit',
         path: '/units/:unitId',
@@ -28,7 +55,7 @@ export const router = createBrowserRouter([
           { path: 'result', element: <ResultPage /> },
         ],
       },
-      // Memo cards run as their own flow, independent of the challenge session.
+      // Free-practice memo deck, independent of the challenge session.
       {
         path: '/units/:unitId/memo',
         element: <MemoPage />,

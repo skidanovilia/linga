@@ -32,14 +32,18 @@ export interface FillTypeData {
   answer: string
 }
 
-/** Discriminated union keyed on `type`; `data` narrows per member. */
+/** Discriminated union keyed on `type`; `data` narrows per member. The `id` is
+ *  the content row's stable UUID — the key the spaced-repetition shelf uses, so
+ *  reordering or editing content never resets progress. */
 export type Challenge =
-  | { type: 'fill_choice'; data: FillChoiceData }
-  | { type: 'order'; data: OrderData }
-  | { type: 'fill_type'; data: FillTypeData }
+  | { id: string; type: 'fill_choice'; data: FillChoiceData }
+  | { id: string; type: 'order'; data: OrderData }
+  | { id: string; type: 'fill_type'; data: FillTypeData }
 
 /** A single vocabulary pair, used as a memo (flashcard) card. */
 export interface VocabEntry {
+  /** Content row UUID — the stable key for the memo-card review shelf. */
+  id: string
   /** Georgian — shown on the card's back. */
   ka: string
   /** Russian — shown on the card's front. */

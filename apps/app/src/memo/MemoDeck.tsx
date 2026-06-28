@@ -79,7 +79,7 @@ export function MemoDeck({ cards, onComplete }: MemoDeckProps) {
   )
 }
 
-interface ActiveCardProps {
+export interface ActiveCardProps {
   entry: VocabEntry
   onSwipe: (direction: number) => void
 }
@@ -87,9 +87,10 @@ interface ActiveCardProps {
 /**
  * The top, interactive card: draggable along X with a card-like tilt and fade
  * tied to the drag position. Flicked past the threshold, it animates off-screen
- * and reports the direction; otherwise it springs back to center.
+ * and reports the direction; otherwise it springs back to center. Shared by the
+ * free-practice deck and the scheduled card-review deck.
  */
-function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
+export function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
   const [flipped, setFlipped] = useState(false)
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-300, 300], [-18, 18])

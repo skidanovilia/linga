@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/*
+ * Bauhaus design tokens. Tailwind v4 generates utilities from these:
+ *   --color-* → bg-* / text-* / border-* / ring-* / outline-*
+ *   --font-*  → font-*
+ *   --shadow-* → shadow-*
+ * Radius is intentionally binary (rounded-none / rounded-full, both built-in),
+ * so there are no --radius-* tokens.
+ */
+@theme {
+  /* Palette — pure primaries on stark ink + off-white canvas. */
+  --color-bauhaus-red: #d02020;
+  --color-bauhaus-blue: #1040c0;
+  --color-bauhaus-yellow: #f0c020;
+  --color-ink: #121212;
+  --color-canvas: #f0f0f0;
+  --color-muted: #e0e0e0;
+
+  /* Semantic roles map onto primaries: blue=correct (CVD-safe vs red), red=wrong. */
+  --color-success: #1040c0;
+  --color-danger: #d02020;
+
+  /* Outfit for Latin chrome; the content stack falls through to Noto for the
+     Cyrillic (ru) and Georgian (ka) glyphs Outfit doesn't carry. */
+  --font-display: "Outfit Variable", "Outfit", system-ui, sans-serif;
+  --font-content: "Outfit Variable", "Outfit", "Noto Sans", "Noto Sans Georgian", sans-serif;
+
+  /* Hard offset shadows — ink, never blurred. The press/disabled states clear
+     them with the built-in shadow-none. */
+  --shadow-hard-sm: 2px 2px 0 0 #121212;
+  --shadow-hard: 4px 4px 0 0 #121212;
+  --shadow-hard-lg: 6px 6px 0 0 #121212;
+  --shadow-hard-xl: 8px 8px 0 0 #121212;
+}
+
 html,
 body,
 #root {
@@ -7,7 +41,10 @@ body,
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-canvas text-ink antialiased;
+  /* Per-glyph fallback for every element by default: Latin from Outfit,
+     Cyrillic/Georgian from Noto. */
+  font-family: var(--font-content);
   /* The memo deck flings cards past the viewport edge; never scroll sideways. */
   overflow-x: hidden;
 }

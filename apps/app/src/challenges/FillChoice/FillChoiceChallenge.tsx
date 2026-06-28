@@ -43,12 +43,12 @@ export function FillChoiceChallenge({
               type="button"
               disabled={disabled}
               onClick={() => toggle(selected[b])}
-              className={`rounded-md px-2 py-0.5 font-semibold ${gapClass(status)}`}
+              className={`rounded-none border-2 px-2 py-0.5 font-content font-bold ${gapClass(status)}`}
             >
               {options[selected[b]]}
             </button>
           ) : (
-            <span className="inline-block w-16 border-b-2 border-slate-300" />
+            <span className="inline-block w-16 border-b-2 border-ink" />
           )
         }
       />
@@ -62,10 +62,10 @@ export function FillChoiceChallenge({
               type="button"
               disabled={disabled || (!used && full)}
               onClick={() => toggle(i)}
-              className={`rounded-xl border px-4 py-3 text-lg font-medium transition disabled:cursor-not-allowed ${
+              className={`rounded-none border-2 border-ink px-4 py-3 font-content text-lg font-medium transition-transform duration-200 ease-out disabled:cursor-not-allowed ${
                 used
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-200 bg-white enabled:hover:border-slate-300 disabled:opacity-40'
+                  ? 'bg-ink text-white shadow-hard active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                  : 'bg-white shadow-hard enabled:active:translate-x-[2px] enabled:active:translate-y-[2px] enabled:active:shadow-none disabled:border-ink/30 disabled:text-ink/30 disabled:shadow-none'
               }`}
             >
               {option}
@@ -78,7 +78,7 @@ export function FillChoiceChallenge({
 }
 
 function gapClass(status: ChallengeStatus): string {
-  if (status === 'correct') return 'bg-green-100 text-green-800'
-  if (status === 'incorrect') return 'bg-red-100 text-red-800'
-  return 'bg-slate-100 text-slate-900'
+  if (status === 'correct') return 'border-bauhaus-blue text-bauhaus-blue'
+  if (status === 'incorrect') return 'border-bauhaus-red text-bauhaus-red'
+  return 'border-ink text-ink'
 }

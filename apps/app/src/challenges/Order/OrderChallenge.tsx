@@ -25,14 +25,14 @@ export function OrderChallenge({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="whitespace-pre-line text-center text-lg text-slate-500">{data.ru}</p>
+      <p className="whitespace-pre-line text-center font-content text-lg text-ink/70">{data.ru}</p>
 
       {/* Assembled answer line — tap a word to remove it. */}
       <div
-        className={`flex min-h-[3.5rem] flex-wrap items-center gap-2 rounded-xl border p-3 ${answerLineClass(status)}`}
+        className={`flex min-h-[3.5rem] flex-wrap items-center gap-2 rounded-none border-2 p-3 ${answerLineClass(status)}`}
       >
         {selected.length === 0 ? (
-          <span className="text-slate-400">Tap words to build the sentence…</span>
+          <span className="font-content text-ink/40">Tap words to build the sentence…</span>
         ) : (
           selected.map((i) => (
             <button
@@ -40,7 +40,7 @@ export function OrderChallenge({
               type="button"
               disabled={disabled}
               onClick={() => toggle(i)}
-              className="rounded-lg bg-white px-3 py-1.5 text-lg font-medium shadow-sm"
+              className="rounded-none border-2 border-ink bg-white px-3 py-1.5 font-content text-lg font-medium shadow-hard-sm"
             >
               {tokens[i]}
             </button>
@@ -58,10 +58,10 @@ export function OrderChallenge({
               type="button"
               disabled={disabled || used}
               onClick={() => toggle(i)}
-              className={`rounded-lg border px-3 py-1.5 text-lg font-medium transition ${
+              className={`rounded-none border-2 px-3 py-1.5 font-content text-lg font-medium transition-transform duration-200 ease-out ${
                 used
-                  ? 'border-slate-100 bg-slate-100 text-slate-300'
-                  : 'border-slate-200 bg-white enabled:hover:border-slate-300'
+                  ? 'border-ink/30 bg-muted text-ink/30'
+                  : 'border-ink bg-white shadow-hard-sm enabled:hover:-translate-y-0.5'
               }`}
             >
               {word}
@@ -74,7 +74,7 @@ export function OrderChallenge({
 }
 
 function answerLineClass(status: ChallengeStatus): string {
-  if (status === 'correct') return 'border-green-300 bg-green-50'
-  if (status === 'incorrect') return 'border-red-300 bg-red-50'
-  return 'border-slate-200 bg-slate-50'
+  if (status === 'correct') return 'border-bauhaus-blue bg-white'
+  if (status === 'incorrect') return 'border-bauhaus-red bg-white'
+  return 'border-ink bg-canvas'
 }

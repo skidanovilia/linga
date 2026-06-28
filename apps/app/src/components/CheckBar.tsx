@@ -1,4 +1,6 @@
+import { ArrowRight, Check, X } from 'lucide-react'
 import type { ChallengeStatus } from '../challenges/types'
+import { Button } from './Button'
 
 interface CheckBarProps {
   status: ChallengeStatus
@@ -12,21 +14,18 @@ interface CheckBarProps {
 
 /**
  * The universal bottom bar shared by every challenge type: a "Check" button
- * while idle, then a green/red feedback panel (revealing the correct answer
- * when wrong) with a "Next" button.
+ * while idle, then a blue/red feedback panel (revealing the correct answer when
+ * wrong) with a "Next" button. Correctness is triple-encoded — color (blue vs
+ * red, colorblind-safe), icon (check vs cross), and label — so color is never
+ * the sole signal.
  */
 export function CheckBar({ status, canCheck, correctAnswer, onCheck, onNext }: CheckBarProps) {
   if (status === 'idle') {
     return (
       <div className="mt-8">
-        <button
-          type="button"
-          disabled={!canCheck}
-          onClick={onCheck}
-          className="w-full rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white transition enabled:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <Button variant="blue" shape="square" disabled={!canCheck} onClick={onCheck} className="w-full">
           Check
-        </button>
+        </Button>
       </div>
     )
   }
@@ -34,30 +33,26 @@ export function CheckBar({ status, canCheck, correctAnswer, onCheck, onNext }: C
   const correct = status === 'correct'
   return (
     <div
-      className={`mt-8 rounded-xl border p-4 ${
-        correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+      className={`mt-8 rounded-none border-2 md:border-4 border-ink p-4 text-white shadow-hard md:shadow-hard-lg ${
+        correct ? 'bg-bauhaus-blue' : 'bg-bauhaus-red'
       }`}
     >
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className={`font-semibold ${correct ? 'text-green-700' : 'text-red-700'}`}>
-            {correct ? 'Correct!' : 'Not quite'}
+          <p className="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-tight">
+            {correct ? <Check className="h-6 w-6" strokeWidth={3} /> : <X className="h-6 w-6" strokeWidth={3} />}
+            {correct ? 'Correct' : 'Not quite'}
           </p>
           {!correct && (
-            <p className="mt-1 text-sm text-red-700">
-              Correct answer: <span className="font-medium">{correctAnswer}</span>
+            <p className="mt-1 font-content text-sm">
+              Correct answer: <span className="font-bold">{correctAnswer}</span>
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onNext}
-          className={`shrink-0 rounded-xl px-6 py-3 font-semibold text-white transition ${
-            correct ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'
-          }`}
-        >
+        <Button variant="yellow" shape="square" onClick={onNext} className="shrink-0">
           Next
-        </button>
+          <ArrowRight className="h-5 w-5" strokeWidth={3} />
+        </Button>
       </div>
     </div>
   )

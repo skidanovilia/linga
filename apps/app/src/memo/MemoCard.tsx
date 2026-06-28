@@ -9,10 +9,16 @@ interface MemoCardProps {
   flipped: boolean
   /** Called on a tap; toggles the flip. Omit for non-interactive (background) cards. */
   onFlip?: () => void
+  /** Hard offset shadow on the (non-rotating) outer frame. Peek/background cards
+   *  pass false so the stack doesn't show a doubled shadow. */
+  elevated?: boolean
 }
 
+// Square Bauhaus faces: thick ink border, no shadow here — the offset shadow
+// lives on the outer frame so it never enters the 3D rotation (a shadow on a
+// backface-visibility-hidden face culls/flips when rotated 180°).
 const faceClass =
-  'absolute inset-0 flex items-center justify-center rounded-2xl border border-slate-200 p-6 text-center shadow-sm'
+  'absolute inset-0 flex items-center justify-center rounded-none border-2 md:border-4 border-ink p-6 text-center'
 
 /**
  * A single flip card. The front shows Russian, the back shows Georgian. The
@@ -21,9 +27,12 @@ const faceClass =
  * The tap gesture auto-cancels once a drag begins on an ancestor (>3px move),
  * so flipping and swiping don't conflict.
  */
-export function MemoCard({ front, back, flipped, onFlip }: MemoCardProps) {
+export function MemoCard({ front, back, flipped, onFlip, elevated = true }: MemoCardProps) {
   return (
-    <div className="h-full w-full" style={{ perspective: 1000 }}>
+    <div
+      className={`h-full w-full ${elevated ? 'shadow-hard-lg md:shadow-hard-xl' : ''}`}
+      style={{ perspective: 1000 }}
+    >
       <motion.div
         onTap={onFlip}
         animate={{ rotateY: flipped ? 180 : 0 }}
@@ -35,17 +44,17 @@ export function MemoCard({ front, back, flipped, onFlip }: MemoCardProps) {
           className={`${faceClass} bg-white`}
           style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
         >
-          <span className="text-3xl font-semibold text-slate-900">{front}</span>
+          <span className="font-content text-3xl font-bold text-ink md:text-4xl">{front}</span>
         </div>
         <div
-          className={`${faceClass} bg-slate-900`}
+          className={`${faceClass} bg-ink`}
           style={{
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
           }}
         >
-          <span className="text-3xl font-semibold text-white">{back}</span>
+          <span className="font-content text-3xl font-bold text-white md:text-4xl">{back}</span>
         </div>
       </motion.div>
     </div>

@@ -23,11 +23,11 @@ export function FillTypeChallenge({
             autoCorrect="off"
             spellCheck={false}
             aria-label="Your answer"
-            className={`w-44 border-b-2 bg-transparent text-center text-2xl font-semibold outline-none ${inputClass(status)}`}
+            className={`w-44 border-b-2 bg-transparent text-center font-content text-2xl font-bold outline-none md:border-b-4 ${inputClass(status)}`}
           />
         )}
       />
-      <p className="text-center text-sm text-slate-400">
+      <p className="text-center font-display text-sm uppercase tracking-wide text-ink/50">
         Type the missing word using your Georgian keyboard.
       </p>
     </div>
@@ -35,7 +35,7 @@ export function FillTypeChallenge({
 }
 
 function inputClass(status: ChallengeStatus): string {
-  if (status === 'correct') return 'border-green-400 text-green-700'
-  if (status === 'incorrect') return 'border-red-400 text-red-700'
-  return 'border-slate-300 focus:border-slate-900'
+  if (status === 'correct') return 'border-bauhaus-blue text-bauhaus-blue'
+  if (status === 'incorrect') return 'border-bauhaus-red text-bauhaus-red'
+  return 'border-ink focus:border-bauhaus-blue'
 }

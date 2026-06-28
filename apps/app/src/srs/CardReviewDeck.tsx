@@ -29,7 +29,7 @@ export function CardReviewDeck({
       <div className="relative h-80 w-full">
         {upcoming && (
           <div className="absolute inset-0 z-0 scale-95 opacity-60">
-            <MemoCard front={upcoming.ru} back={upcoming.ka} flipped={false} />
+            <MemoCard front={upcoming.ru} back={upcoming.ka} flipped={false} elevated={false} />
           </div>
         )}
         {/* Key by id + position so a requeued card remounts with fresh state. */}
@@ -39,7 +39,7 @@ export function CardReviewDeck({
           onSwipe={(direction) => onAnswer(direction > 0)}
         />
       </div>
-      <p className="text-center text-sm tabular-nums text-slate-400">
+      <p className="text-center font-display text-sm tabular-nums text-ink/50">
         {index} / {total}
       </p>
     </div>

@@ -5,6 +5,7 @@ import { useReviewSession } from '../srs/useReviewSession'
 import { CardReviewDeck } from '../srs/CardReviewDeck'
 import { ReviewEmptyState, ReviewHeader, ReviewSummary } from '../srs/ReviewChrome'
 import { Loading } from './Loading'
+import { PageShell } from '../components/PageShell'
 
 /**
  * Scheduled card review (`/units/:unitId/review/cards`). The deck is driven by
@@ -22,12 +23,12 @@ export function CardReviewPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col px-4 py-6">
+    <PageShell>
       <ReviewHeader unitTitle={unit.title} label="Review cards" />
 
       <div className="mt-8 flex flex-1 flex-col">
         {review.error ? (
-          <p className="text-center text-red-600">{review.error}</p>
+          <p className="text-center font-content font-bold text-bauhaus-red">{review.error}</p>
         ) : review.phase === 'loading' ? (
           <Loading />
         ) : review.phase === 'empty' ? (
@@ -44,6 +45,6 @@ export function CardReviewPage() {
           />
         ) : null}
       </div>
-    </div>
+    </PageShell>
   )
 }

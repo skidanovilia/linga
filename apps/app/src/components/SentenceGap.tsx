@@ -13,7 +13,7 @@ export function SentenceGap({ sentence, renderGap }: SentenceGapProps) {
   // N gaps split the sentence into N+1 text segments; interleave a slot between them.
   const segments = sentence.split(GAP)
   return (
-    <p className="whitespace-pre-line text-center text-2xl leading-relaxed">
+    <p className="whitespace-pre-line text-center font-content text-2xl font-medium leading-relaxed md:text-3xl">
       {segments.map((segment, i) => (
         <Fragment key={i}>
           <span>{segment}</span>

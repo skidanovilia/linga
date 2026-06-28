@@ -1,13 +1,18 @@
-import { Link } from 'react-router'
+import { PageShell } from '../components/PageShell'
+import { ButtonLink } from '../components/Button'
+import { Shape } from '../components/Shape'
 
 export function NotFound() {
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
-      <p className="text-6xl font-bold text-slate-300">404</p>
-      <h1 className="text-xl font-semibold">Page not found</h1>
-      <Link to="/units" className="text-slate-900 underline underline-offset-4">
+    <PageShell center className="gap-6 py-10 text-center">
+      <div className="flex items-center gap-4">
+        <p className="font-display text-7xl font-black text-bauhaus-red">404</p>
+        <Shape kind="square" color="blue" size={40} rotated className="border-4 border-ink" />
+      </div>
+      <h1 className="font-display text-xl font-bold uppercase tracking-tight">Page not found</h1>
+      <ButtonLink to="/units" variant="outline">
         Back to units
-      </Link>
-    </div>
+      </ButtonLink>
+    </PageShell>
   )
 }

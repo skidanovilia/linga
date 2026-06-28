@@ -1,9 +1,18 @@
 import { Link, useLoaderData } from 'react-router'
+import { Lock } from 'lucide-react'
 import type { Unit } from '../types/domain'
 import type { ShelfStatus } from '../lib/srs/shelf'
 import { useAuth } from '../auth/useAuth'
 import { useShelfStatus } from '../srs/useShelfStatus'
 import { formatDue } from '../srs/formatDue'
+import { PageShell } from '../components/PageShell'
+import { GeometricLogo } from '../components/GeometricLogo'
+import { Button, ButtonLink, buttonClasses } from '../components/Button'
+import { Card } from '../components/Card'
+import { Shape } from '../components/Shape'
+
+// Rotate the three primaries across the unit cards for the constructivist rhythm.
+const ACCENTS = ['red', 'blue', 'yellow'] as const
 
 export function UnitsListPage() {
   const units = useLoaderData() as Unit[]
@@ -11,38 +20,38 @@ export function UnitsListPage() {
   const shelves = useShelfStatus(units)
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col gap-6 px-4 py-10">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Linga</h1>
-          <p className="mt-1 text-slate-500">Review what's due, or practice freely.</p>
+    <PageShell className="gap-6 py-10">
+      <header className="flex items-start justify-between border-b-4 border-ink pb-6">
+        <div className="flex items-center gap-3">
+          <GeometricLogo size={40} />
+          <div>
+            <h1 className="font-display text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">
+              Linga
+            </h1>
+            <p className="mt-1 font-content text-ink/70">Review what's due, or practice freely.</p>
+          </div>
         </div>
         {user ? (
-          <div className="text-right text-sm text-slate-500">
+          <div className="text-right font-content text-sm text-ink/60">
             <p className="max-w-[12rem] truncate">{user.email}</p>
-            <button type="button" onClick={() => void signOut()} className="hover:text-slate-900">
+            <Button variant="ghost" onClick={() => void signOut()}>
               Sign out
-            </button>
+            </Button>
           </div>
         ) : (
-          <Link
-            to="/login"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-          >
+          <ButtonLink to="/login" variant="blue" className="text-sm">
             Sign in
-          </Link>
+          </ButtonLink>
         )}
       </header>
 
-      <ul className="flex flex-col gap-3">
-        {units.map((unit) => {
+      <ul className="flex flex-col gap-4">
+        {units.map((unit, i) => {
           const status = shelves?.get(unit.id)
+          const accent = ACCENTS[i % ACCENTS.length]
           return (
-            <li
-              key={unit.id}
-              className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
-            >
-              <p className="font-medium">{unit.title}</p>
+            <Card as="li" key={unit.id} interactive decoration={accent} className="px-5 py-4">
+              <p className="font-content text-lg font-bold">{unit.title}</p>
 
               {/* Scheduled review — one launch button per shelf, gated per shelf. */}
               <div className="mt-3 flex gap-2">
@@ -51,59 +60,68 @@ export function UnitsListPage() {
                     <ShelfButton
                       to={`/units/${unit.id}/review/cards`}
                       label="Review cards"
+                      variant="blue"
                       status={status?.cards}
                     />
                     <ShelfButton
                       to={`/units/${unit.id}/review/challenges`}
                       label="Review challenges"
+                      variant="red"
                       status={status?.challenges}
                     />
                   </>
                 ) : (
-                  <Link
-                    to="/login"
-                    className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
-                  >
+                  <ButtonLink to="/login" variant="yellow" className="flex-1 text-sm">
                     Sign in to review
-                  </Link>
+                  </ButtonLink>
                 )}
               </div>
 
               {/* Free practice — never moves the shelf. */}
-              <div className="mt-2 flex gap-3 text-sm text-slate-500">
-                <span>Practice freely:</span>
-                <Link to={`/units/${unit.id}`} className="hover:text-slate-900">
-                  Challenges
+              <div className="mt-3 flex items-center gap-3 font-content text-sm text-ink/60">
+                <span className="font-display font-bold uppercase tracking-wide">Practice freely:</span>
+                <Link
+                  to={`/units/${unit.id}`}
+                  className="inline-flex items-center gap-1.5 font-medium hover:text-bauhaus-blue"
+                >
+                  <Shape kind="square" color="blue" size={8} /> Challenges
                 </Link>
-                <Link to={`/units/${unit.id}/memo`} className="hover:text-slate-900">
-                  Memo
+                <Link
+                  to={`/units/${unit.id}/memo`}
+                  className="inline-flex items-center gap-1.5 font-medium hover:text-bauhaus-red"
+                >
+                  <Shape kind="circle" color="red" size={8} /> Memo
                 </Link>
               </div>
-            </li>
+            </Card>
           )
         })}
       </ul>
-    </div>
+    </PageShell>
   )
 }
 
 /**
  * One shelf's launch button, its enabled/disabled state derived entirely from
  * the engine's shelf summary. `undefined` status = still loading. A disabled
- * button shows the "all reviewed — next due at T" state and is non-interactive.
+ * button shows the "all reviewed — next due at T" state and is non-interactive;
+ * its dashed border + lock icon + flattened shadow carry the disabled state
+ * without relying on color alone.
  */
 function ShelfButton({
   to,
   label,
+  variant,
   status,
 }: {
   to: string
   label: string
+  variant: 'blue' | 'red'
   status: ShelfStatus | undefined
 }) {
   if (!status) {
     return (
-      <span className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-semibold text-slate-300">
+      <span className="flex-1 rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
         {label}
       </span>
     )
@@ -114,10 +132,13 @@ function ShelfButton({
       <button
         type="button"
         disabled
-        className="flex-1 cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-center text-sm font-semibold text-slate-400"
+        className={buttonClasses({ variant, className: 'flex-1 flex-col text-sm' })}
       >
-        {label}
-        <span className="mt-0.5 block text-[11px] font-normal">
+        <span className="flex items-center gap-1.5">
+          <Lock className="h-4 w-4" strokeWidth={3} />
+          {label}
+        </span>
+        <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal">
           All reviewed · next {formatDue(status.nextDueAt)}
         </span>
       </button>
@@ -125,15 +146,12 @@ function ShelfButton({
   }
 
   return (
-    <Link
-      to={to}
-      className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
-    >
+    <ButtonLink to={to} variant={variant} className="flex-1 flex-col text-sm">
       {label}
-      <span className="mt-0.5 block text-[11px] font-normal text-slate-300">
+      <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal text-white/80">
         {shelfHint(status)}
       </span>
-    </Link>
+    </ButtonLink>
   )
 }
 

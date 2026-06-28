@@ -1,6 +1,9 @@
-import { Link, useNavigate, useRouteLoaderData } from 'react-router'
+import { useNavigate, useRouteLoaderData } from 'react-router'
 import type { Unit } from '../types/domain'
 import { useSession } from '../session/useSession'
+import { PageShell } from '../components/PageShell'
+import { Button, ButtonLink } from '../components/Button'
+import { Card } from '../components/Card'
 
 export function ResultPage() {
   const unit = useRouteLoaderData('unit') as Unit
@@ -16,36 +19,33 @@ export function ResultPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-6 px-4 py-10 text-center">
-      <h1 className="text-2xl font-bold">{unit.title}</h1>
+    <PageShell center className="gap-6 py-10 text-center">
+      <h1 className="font-content text-2xl font-bold">{unit.title}</h1>
 
-      <div className="rounded-2xl border border-slate-200 bg-white px-10 py-8 shadow-sm">
-        <p className="text-sm uppercase tracking-wide text-slate-400">Result</p>
-        <p className="mt-2 text-5xl font-bold tabular-nums">
-          {correct}
-          <span className="text-slate-300"> / </span>
+      {/* A perfect run earns the celebratory yellow color-block. */}
+      <Card
+        decoration={allCorrect ? 'red' : 'blue'}
+        className={`px-10 py-8 ${allCorrect ? 'bg-bauhaus-yellow' : ''}`}
+      >
+        <p className="font-display text-sm font-bold uppercase tracking-widest text-ink/60">Result</p>
+        <p className="mt-2 font-display text-6xl font-black tabular-nums">
+          <span className={allCorrect ? 'text-ink' : 'text-bauhaus-blue'}>{correct}</span>
+          <span className="text-ink/30"> / </span>
           {total}
         </p>
-        <p className="mt-3 text-slate-500">
+        <p className="mt-3 font-content text-ink/70">
           {allCorrect ? 'Perfect! 🎉' : 'Keep practicing!'}
         </p>
-      </div>
+      </Card>
 
       <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleRestart}
-          className="rounded-xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-700"
-        >
+        <Button variant="blue" onClick={handleRestart}>
           Restart unit
-        </button>
-        <Link
-          to="/units"
-          className="rounded-xl border border-slate-200 bg-white px-5 py-3 font-medium transition hover:border-slate-300"
-        >
+        </Button>
+        <ButtonLink to="/units" variant="outline">
           Back to units
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </PageShell>
   )
 }

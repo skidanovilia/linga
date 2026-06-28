@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { Link, useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import type { Unit } from '../types/domain'
 import { MemoDeck, type MemoResultData } from './MemoDeck'
+import { PageShell } from '../components/PageShell'
+import { BackLink } from '../components/BackLink'
+import { Button, ButtonLink } from '../components/Button'
+import { Card } from '../components/Card'
 
 /**
  * The memo-cards route (`/units/:unitId/memo`). Runs independently of the
@@ -20,27 +24,27 @@ export function MemoPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col px-4 py-6">
+    <PageShell>
       <header className="flex flex-col gap-3">
-        <div className="flex items-center justify-between text-sm text-slate-500">
-          <Link to="/units" className="hover:text-slate-900">
-            ← Units
-          </Link>
-          <span>Memo cards</span>
+        <div className="flex items-center justify-between">
+          <BackLink />
+          <span className="font-display text-sm font-bold uppercase tracking-wide text-ink/60">
+            Memo cards
+          </span>
         </div>
-        <h2 className="text-sm font-medium text-slate-400">{unit.title}</h2>
+        <h2 className="font-content text-sm font-bold text-ink/60">{unit.title}</h2>
       </header>
 
       <div className="mt-8 flex flex-1 flex-col">
         {unit.vocab.length === 0 ? (
-          <p className="text-center text-slate-500">This unit has no vocabulary yet.</p>
+          <p className="text-center font-content text-ink/60">This unit has no vocabulary yet.</p>
         ) : result ? (
           <MemoResult result={result} onRestart={handleRestart} />
         ) : (
           <MemoDeck key={round} cards={unit.vocab} onComplete={setResult} />
         )}
       </div>
-    </div>
+    </PageShell>
   )
 }
 
@@ -53,37 +57,40 @@ function MemoResult({ result, onRestart }: MemoResultProps) {
   const total = result.known + result.unknown
   return (
     <div className="flex flex-col items-center gap-6 text-center">
-      <div className="rounded-2xl border border-slate-200 bg-white px-10 py-8 shadow-sm">
-        <p className="text-sm uppercase tracking-wide text-slate-400">Memo complete</p>
+      <Card decoration="blue" className="px-10 py-8">
+        <p className="font-display text-sm font-bold uppercase tracking-widest text-ink/60">
+          Memo complete
+        </p>
         <div className="mt-4 flex items-center justify-center gap-8">
           <div>
-            <p className="text-5xl font-bold tabular-nums text-green-600">{result.known}</p>
-            <p className="mt-1 text-sm text-slate-500">Know</p>
+            <p className="font-display text-5xl font-black tabular-nums text-bauhaus-blue">
+              {result.known}
+            </p>
+            <p className="mt-1 font-display text-sm font-bold uppercase tracking-wide text-ink/60">
+              Know
+            </p>
           </div>
           <div>
-            <p className="text-5xl font-bold tabular-nums text-red-600">{result.unknown}</p>
-            <p className="mt-1 text-sm text-slate-500">Don't know</p>
+            <p className="font-display text-5xl font-black tabular-nums text-bauhaus-red">
+              {result.unknown}
+            </p>
+            <p className="mt-1 font-display text-sm font-bold uppercase tracking-wide text-ink/60">
+              Don't know
+            </p>
           </div>
         </div>
-        <p className="mt-4 text-slate-500">
+        <p className="mt-4 font-content text-ink/70">
           {result.unknown === 0 ? 'All known! 🎉' : `${total} cards reviewed`}
         </p>
-      </div>
+      </Card>
 
       <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onRestart}
-          className="rounded-xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-700"
-        >
+        <Button variant="blue" onClick={onRestart}>
           Restart
-        </button>
-        <Link
-          to="/units"
-          className="rounded-xl border border-slate-200 bg-white px-5 py-3 font-medium transition hover:border-slate-300"
-        >
+        </Button>
+        <ButtonLink to="/units" variant="outline">
           Back to units
-        </Link>
+        </ButtonLink>
       </div>
     </div>
   )

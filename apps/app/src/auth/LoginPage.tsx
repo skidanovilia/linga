@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router'
+import { Navigate, useLocation, useNavigate } from 'react-router'
+import { X } from 'lucide-react'
 import { useAuth } from './useAuth'
+import { PageShell } from '../components/PageShell'
+import { GeometricLogo } from '../components/GeometricLogo'
+import { Button, ButtonLink } from '../components/Button'
+import { Input } from '../components/Input'
 
 type Mode = 'login' | 'signup'
 
@@ -40,25 +45,27 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-sm flex-col justify-center gap-6 px-4 py-10">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Linga</h1>
-        <p className="mt-1 text-slate-500">
+    <PageShell size="sm" center className="gap-6 py-10">
+      <header className="flex flex-col items-center text-center">
+        <GeometricLogo size={44} />
+        <h1 className="mt-3 font-display text-4xl font-black uppercase leading-none tracking-tighter">
+          Linga
+        </h1>
+        <p className="mt-2 font-content text-ink/70">
           {mode === 'login' ? 'Sign in to track your reviews.' : 'Create an account.'}
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+        <Input
           type="email"
           required
           autoComplete="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
         />
-        <input
+        <Input
           type="password"
           required
           minLength={6}
@@ -66,35 +73,34 @@ export function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
         />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="flex items-center gap-1.5 font-content text-sm font-bold text-bauhaus-red">
+            <X className="h-4 w-4 shrink-0" strokeWidth={3} />
+            {error}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
-        >
+        <Button type="submit" variant="blue" disabled={busy} className="w-full">
           {busy ? '…' : mode === 'login' ? 'Sign in' : 'Sign up'}
-        </button>
+        </Button>
       </form>
 
-      <div className="flex items-center justify-between text-sm text-slate-500">
-        <button
-          type="button"
+      <div className="flex w-full items-center justify-between font-content text-sm text-ink/60">
+        <Button
+          variant="ghost"
           onClick={() => {
             setMode(mode === 'login' ? 'signup' : 'login')
             setError(null)
           }}
-          className="hover:text-slate-900"
         >
           {mode === 'login' ? 'Need an account? Sign up' : 'Have an account? Sign in'}
-        </button>
-        <Link to="/units" className="hover:text-slate-900">
+        </Button>
+        <ButtonLink to="/units" variant="ghost">
           Browse →
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </PageShell>
   )
 }

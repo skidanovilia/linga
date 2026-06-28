@@ -1,7 +1,9 @@
-import { Link, Navigate, useNavigate, useParams, useRouteLoaderData } from 'react-router'
+import { Navigate, useNavigate, useParams, useRouteLoaderData } from 'react-router'
 import type { Unit } from '../types/domain'
 import { ChallengeRenderer } from '../challenges/ChallengeRenderer'
 import { useSession } from '../session/useSession'
+import { PageShell } from '../components/PageShell'
+import { BackLink } from '../components/BackLink'
 
 export function ChallengePage() {
   const unit = useRouteLoaderData('unit') as Unit
@@ -27,23 +29,22 @@ export function ChallengePage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-xl flex-col px-4 py-6">
+    <PageShell>
       <header className="flex flex-col gap-3">
-        <div className="flex items-center justify-between text-sm text-slate-500">
-          <Link to="/units" className="hover:text-slate-900">
-            ← Units
-          </Link>
-          <span className="tabular-nums">
+        <div className="flex items-center justify-between">
+          <BackLink />
+          <span className="font-display text-sm font-bold tabular-nums text-ink/60">
             {index + 1} / {total}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+        {/* Hard-edged progress bar — boxed track, solid blue fill. */}
+        <div className="h-3 w-full overflow-hidden rounded-none border-2 border-ink bg-canvas">
           <div
-            className="h-full rounded-full bg-slate-900 transition-all"
+            className="h-full bg-bauhaus-blue transition-all duration-300 ease-out"
             style={{ width: `${((index + 1) / total) * 100}%` }}
           />
         </div>
-        <h2 className="text-sm font-medium text-slate-400">{unit.title}</h2>
+        <h2 className="font-content text-sm font-bold text-ink/60">{unit.title}</h2>
       </header>
 
       <div className="mt-8 flex flex-1 flex-col">
@@ -55,6 +56,6 @@ export function ChallengePage() {
           onNext={handleNext}
         />
       </div>
-    </div>
+    </PageShell>
   )
 }

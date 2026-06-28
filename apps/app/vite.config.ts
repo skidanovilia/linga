@@ -29,8 +29,8 @@ export default defineConfig({
         name: 'Linga',
         short_name: 'Linga',
         description: 'Practice Georgian with bite-sized challenges and memo cards.',
-        theme_color: '#0f172a', // slate-900
-        background_color: '#f8fafc', // slate-50 (matches body bg)
+        theme_color: '#121212', // bauhaus ink (the nav band)
+        background_color: '#f0f0f0', // bauhaus canvas (matches body bg)
         display: 'standalone',
         start_url: '/',
         scope: '/',

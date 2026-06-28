@@ -52,27 +52,27 @@ export function MemoDeck({ cards, onComplete }: MemoDeckProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-2 text-red-600">
-          <span className="text-2xl font-bold tabular-nums">{unknown}</span>
-          <span className="text-xs font-medium uppercase tracking-wide">Don't know</span>
+        <div className="flex items-baseline gap-2 text-bauhaus-red">
+          <span className="font-display text-3xl font-black tabular-nums">{unknown}</span>
+          <span className="font-display text-xs font-bold uppercase tracking-wide">Don't know</span>
         </div>
-        <div className="flex items-baseline gap-2 text-green-600">
-          <span className="text-xs font-medium uppercase tracking-wide">Know</span>
-          <span className="text-2xl font-bold tabular-nums">{known}</span>
+        <div className="flex items-baseline gap-2 text-bauhaus-blue">
+          <span className="font-display text-xs font-bold uppercase tracking-wide">Know</span>
+          <span className="font-display text-3xl font-black tabular-nums">{known}</span>
         </div>
       </div>
 
       <div className="relative h-80 w-full">
         {upcoming && (
           <div className="absolute inset-0 z-0 scale-95 opacity-60">
-            <MemoCard front={upcoming.ru} back={upcoming.ka} flipped={false} />
+            <MemoCard front={upcoming.ru} back={upcoming.ka} flipped={false} elevated={false} />
           </div>
         )}
         {/* `key` resets the active card's drag/flip state on each new card. */}
         <ActiveCard key={index} entry={current} onSwipe={handleSwipe} />
       </div>
 
-      <p className="text-center text-sm tabular-nums text-slate-400">
+      <p className="text-center font-display text-sm tabular-nums text-ink/50">
         {index + 1} / {deck.length}
       </p>
     </div>

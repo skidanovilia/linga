@@ -4,8 +4,9 @@ import type { ClearQueueSession } from '../../lib/queue/clearQueue'
 import { useChallengeRuns } from './useChallengeRuns'
 
 /**
- * `loading` → resolving the run; `empty` → the module has no challenges;
- * `running` → a challenge is on screen; `done` → the queue was cleared.
+ * `loading` → waiting for the passed set / resolving the run; `empty` → the
+ * module has no challenges; `running` → a challenge is on screen; `done` → every
+ * challenge is passed (the queue is empty with nothing left not-passed).
  */
 export type ChallengeRunPhase = 'loading' | 'empty' | 'running' | 'done'
 
@@ -19,52 +20,64 @@ export interface ChallengeRunState {
   total: number
   answer: (correct: boolean) => void
   advance: () => void
-  /** Replay: discard the run and start a fresh shuffled queue from scratch. */
+  /** Replay: reset persisted progress and start a fresh shuffled queue. */
   restart: () => void
 }
 
 /**
  * Drives one module's clear-the-queue run. The live session comes from the
- * app-wide provider, so leaving and returning resumes the same queue; replay
- * forces a fresh shuffle. On clearing the queue it records module completion
- * through the provider (direct upsert to module_completion — no RPC). The
- * session is a mutable controller held in a ref; a tick re-renders on advance.
+ * app-wide provider, built from the module's *not-passed* challenges, so leaving
+ * and returning within a session resumes the same queue while a full reload
+ * rebuilds from whatever is still not-passed. A correct (or corrected) answer
+ * persists that challenge as passed immediately, before the next item is shown
+ * (direct upsert to challenge_progress — no RPC); a wrong answer re-queues it and
+ * writes nothing. The session is a mutable controller held in a ref; a tick
+ * re-renders on advance.
  */
 export function useChallengeRun(unit: Unit): ChallengeRunState {
-  const { resumeOrStart, start, complete } = useChallengeRuns()
+  const { resumeOrStart, replay, markPassed, ready } = useChallengeRuns()
   const sessionRef = useRef<ClearQueueSession<Challenge> | null>(null)
   const [phase, setPhase] = useState<ChallengeRunPhase>('loading')
   const [, tick] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
+    // Wait for the passed set: registering before it loads would treat every
+    // challenge as not-passed and re-queue already-cleared items.
+    if (!ready) return
     const session = resumeOrStart(unit)
     sessionRef.current = session
-    setPhase(session.isComplete() ? 'empty' : 'running')
-    // `resumeOrStart` is stable; re-runs only when the unit changes.
-  }, [unit, resumeOrStart])
+    setPhase(phaseFor(unit, session))
+    // `resumeOrStart` is stable; re-runs only when the unit or readiness changes.
+  }, [unit, ready, resumeOrStart])
 
-  const answer = useCallback((correct: boolean) => {
-    sessionRef.current?.answer(correct)
-  }, [])
+  const answer = useCallback(
+    (correct: boolean) => {
+      const session = sessionRef.current
+      const current = session?.current()
+      session?.answer(correct)
+      // correct OR corrected clears the item; persist it as passed. A wrong
+      // answer re-queues it (handled by the engine) and writes nothing.
+      if (correct && current) void markPassed(current.id)
+    },
+    [markPassed],
+  )
 
   const advance = useCallback(() => {
     const session = sessionRef.current
     if (!session) return
     session.next()
-    if (session.isComplete()) {
-      void complete(unit.id)
-      setPhase('done')
-    } else {
-      tick()
-    }
-  }, [complete, unit.id])
+    // Each cleared item was already persisted; completion is derived, so there
+    // is nothing more to write here.
+    if (session.isComplete()) setPhase('done')
+    else tick()
+  }, [])
 
   const restart = useCallback(() => {
-    const session = start(unit)
+    const session = replay(unit)
     sessionRef.current = session
-    setPhase(session.isComplete() ? 'empty' : 'running')
+    setPhase(phaseFor(unit, session))
     tick()
-  }, [start, unit])
+  }, [replay, unit])
 
   const session = sessionRef.current
   const summary = session?.summary() ?? { answered: 0, correct: 0, total: 0 }
@@ -79,4 +92,14 @@ export function useChallengeRun(unit: Unit): ChallengeRunState {
     advance,
     restart,
   }
+}
+
+/**
+ * Distinguish a module with no challenges (`empty`) from one whose challenges are
+ * all already passed (`done` → completion screen) from one with work left
+ * (`running`).
+ */
+function phaseFor(unit: Unit, session: ClearQueueSession<Challenge>): ChallengeRunPhase {
+  if (unit.challenges.length === 0) return 'empty'
+  return session.isComplete() ? 'done' : 'running'
 }

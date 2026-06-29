@@ -1,12 +1,15 @@
 // Thin per-kind glue between the content model and the clear-the-queue engine,
 // the challenge counterpart to `cardAdapter`. It only lists a module's
-// challenges (keyed by their stable content UUID) and binds to the completion
+// challenges (keyed by their stable content UUID) and binds to the progress
 // store. It holds no scheduling logic: the queue/shuffle/re-queue lives in the
 // engine, answer-checking lives in the challenge registry/renderer, and the only
-// persistence is recording module completion on a cleared run.
+// persistence is recording a challenge as passed once it is cleared.
 
 import type { Challenge, Unit } from '../../types/domain'
-import { SupabaseCompletionStore, type CompletionStore } from '../../lib/queue/completionStore'
+import {
+  SupabaseChallengeProgressStore,
+  type ChallengeProgressStore,
+} from '../../lib/queue/challengeProgressStore'
 
 export const challengeAdapter = {
   kind: 'challenges' as const,
@@ -14,7 +17,7 @@ export const challengeAdapter = {
    *  engine shuffles into a queue. */
   loadItems: (unit: Unit): { id: string; content: Challenge }[] =>
     unit.challenges.map((c) => ({ id: c.id, content: c })),
-  /** A per-user store bound to module_completion. */
-  createCompletionStore: (userId: string): CompletionStore =>
-    new SupabaseCompletionStore(userId),
+  /** A per-user store bound to challenge_progress. */
+  createStore: (userId: string): ChallengeProgressStore =>
+    new SupabaseChallengeProgressStore(userId),
 }

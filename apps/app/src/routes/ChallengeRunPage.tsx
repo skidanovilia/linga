@@ -10,10 +10,12 @@ import { Card } from '../components/Card'
 
 /**
  * Challenge run (`/units/:unitId/challenges`) — the clear-the-queue engine. The
- * module's challenges are shuffled into a queue; the shared renderer checks each
- * answer, a correct one clears it, a wrong one re-queues it later. When the
- * queue empties the module is marked completed and a completion screen offers a
- * fresh replay. There is no SRS box/due here and nothing persists per item.
+ * module's not-passed challenges are shuffled into a queue; the shared renderer
+ * checks each answer, a correct one clears it (and persists it as passed), a
+ * wrong one re-queues it later (persisting nothing). When the queue empties the
+ * module is complete (derived from all challenges being passed) and a completion
+ * screen offers a replay that resets the module. There is no SRS box/due here;
+ * only the per-item passed rows persist, so re-entry resumes where you left off.
  */
 export function ChallengeRunPage() {
   const unit = useLoaderData() as Unit

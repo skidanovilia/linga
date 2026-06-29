@@ -1,8 +1,9 @@
 // The one persistence boundary for memo cards. The engine and adapter depend on
 // the `ProgressStore` interface and never touch Supabase directly, so the
 // backend stays swappable. The Supabase implementation below is pointed at the
-// card progress table (vocab_progress). Challenges no longer persist per-item
-// state — they record only module completion (see lib/queue/completionStore).
+// card progress table (vocab_progress). Challenges keep their own separate,
+// simpler per-item store — a plain "passed" row, no box/due (see
+// lib/queue/challengeProgressStore).
 
 import { supabase } from '../../data/supabase'
 import type { ProgressState, ReviewItem, Result } from './types'

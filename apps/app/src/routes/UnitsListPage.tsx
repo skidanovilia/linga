@@ -66,8 +66,8 @@ export function UnitsListPage() {
                     <ChallengeEntry
                       to={`/units/${unit.id}/challenges`}
                       ready={runs.ready}
-                      status={runs.ready ? runs.statusFor(unit.id) : undefined}
-                      remaining={runs.remainingFor(unit.id)}
+                      status={runs.ready ? runs.statusFor(unit) : undefined}
+                      remaining={runs.remainingFor(unit)}
                     />
                   </>
                 ) : (

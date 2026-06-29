@@ -13,6 +13,20 @@ import { challengeAdapter } from './challengeAdapter'
 /** A module entry's three states, derived (never tracked separately). */
 export type ModuleStatus = 'not_started' | 'in_progress' | 'completed'
 
+/**
+ * A live run plus the start-of-run snapshot that the all-time progress counter
+ * needs. The snapshot is frozen when the run is registered and never re-read, so
+ * `persistedPassedAtStart + session.summary().correct` (cleared this run) counts
+ * each pass exactly once — adding the live persisted count would double-count.
+ */
+export interface ChallengeRun {
+  session: ClearQueueSession<Challenge>
+  /** challenge_progress rows for this unit at run start — frozen, never re-read. */
+  persistedPassedAtStart: number
+  /** The unit's full challenge count (counter denominator). */
+  total: number
+}
+
 export interface ChallengeRunContextValue {
   /** False until the user's passed set has loaded (or while signed out). */
   ready: boolean
@@ -22,10 +36,10 @@ export interface ChallengeRunContextValue {
   remainingFor: (unit: Unit) => number
   /** Resume the live run for a module, or start a fresh shuffled one from its
    *  not-passed challenges. */
-  resumeOrStart: (unit: Unit) => ClearQueueSession<Challenge>
+  resumeOrStart: (unit: Unit) => ChallengeRun
   /** Replay: reset the module's persisted progress, then start a fresh run over
    *  all of its challenges. */
-  replay: (unit: Unit) => ClearQueueSession<Challenge>
+  replay: (unit: Unit) => ChallengeRun
   /** Persist one challenge as passed once it is cleared. */
   markPassed: (challengeId: string) => Promise<void>
 }
@@ -50,7 +64,7 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const userId = user?.id
 
-  const runs = useRef<Map<string, ClearQueueSession<Challenge>>>(new Map())
+  const runs = useRef<Map<string, ChallengeRun>>(new Map())
   const storeRef = useRef<ChallengeProgressStore | null>(null)
   // Mirror of `passed` for synchronous reads inside `register` (which must stay
   // a stable callback so the run-page effect does not re-fire mid-run).
@@ -102,22 +116,28 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
     }
   }, [userId, applyPassed])
 
-  const register = useCallback((unit: Unit): ClearQueueSession<Challenge> => {
+  const register = useCallback((unit: Unit): ChallengeRun => {
     // Build the queue from exactly this module's not-passed challenges.
     const items = challengeAdapter
       .loadItems(unit)
       .filter((item) => !passedRef.current.has(item.id))
     const session = createClearQueueSession(items, { requeueGap: CHALLENGE.requeueGap })
-    // An empty queue (no challenges, or all already passed) is not a tracked run.
+    // Snapshot the all-time progress counter's two ends once, at run start: the
+    // unit's full challenge count (denominator) and how many were already passed
+    // (numerator base). Frozen here so it never re-reads the growing passed set.
+    const total = unit.challenges.length
+    const run: ChallengeRun = { session, persistedPassedAtStart: total - items.length, total }
+    // An empty queue (no challenges, or all already passed) is not a tracked run,
+    // but the run (already at total/total) is still returned for display.
     if (session.isComplete()) runs.current.delete(unit.id)
-    else runs.current.set(unit.id, session)
-    return session
+    else runs.current.set(unit.id, run)
+    return run
   }, [])
 
   const resumeOrStart = useCallback(
-    (unit: Unit): ClearQueueSession<Challenge> => {
+    (unit: Unit): ChallengeRun => {
       const existing = runs.current.get(unit.id)
-      if (existing && !existing.isComplete()) return existing
+      if (existing && !existing.session.isComplete()) return existing
       return register(unit)
     },
     [register],
@@ -136,14 +156,14 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
   }, [applyPassed])
 
   const replay = useCallback(
-    (unit: Unit): ClearQueueSession<Challenge> => {
+    (unit: Unit): ChallengeRun => {
       const ids = unit.challenges.map((c) => c.id)
       applyPassed(without(passedRef.current, ids)) // optimistic: all not-passed again
-      const session = register(unit) // now rebuilds over every challenge
+      const run = register(unit) // now rebuilds over every challenge (snapshot → 0)
       storeRef.current?.resetModule(ids).catch((err) => {
         console.error('Failed to reset challenge progress', err)
       })
-      return session
+      return run
     },
     [register, applyPassed],
   )

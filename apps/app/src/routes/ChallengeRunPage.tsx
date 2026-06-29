@@ -25,7 +25,7 @@ export function ChallengeRunPage() {
     <PageShell>
       <ReviewHeader
         unitTitle={unit.title}
-        label={`Challenges${run.total > 0 ? ` · ${run.cleared} / ${run.total}` : ''}`}
+        label={`Challenges${run.total > 0 ? ` · ${run.solved} / ${run.total}` : ''}`}
       />
 
       <div className="mt-8 flex flex-1 flex-col">

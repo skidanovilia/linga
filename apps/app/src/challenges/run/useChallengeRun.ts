@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { Challenge, Unit } from '../../types/domain'
 import type { ClearQueueSession } from '../../lib/queue/clearQueue'
+import type { ChallengeRun } from './ChallengeRunProvider'
 import { useChallengeRuns } from './useChallengeRuns'
 
 /**
@@ -15,8 +16,8 @@ export interface ChallengeRunState {
   challenge: Challenge | null
   /** Key for the renderer so each presentation resets answer/status state. */
   step: number
-  /** Items cleared so far, and the module's distinct total. */
-  cleared: number
+  /** All-time solved (persisted at start + this run), over the unit's full total. */
+  solved: number
   total: number
   answer: (correct: boolean) => void
   advance: () => void
@@ -36,7 +37,7 @@ export interface ChallengeRunState {
  */
 export function useChallengeRun(unit: Unit): ChallengeRunState {
   const { resumeOrStart, replay, markPassed, ready } = useChallengeRuns()
-  const sessionRef = useRef<ClearQueueSession<Challenge> | null>(null)
+  const runRef = useRef<ChallengeRun | null>(null)
   const [phase, setPhase] = useState<ChallengeRunPhase>('loading')
   const [, tick] = useReducer((n: number) => n + 1, 0)
 
@@ -44,15 +45,15 @@ export function useChallengeRun(unit: Unit): ChallengeRunState {
     // Wait for the passed set: registering before it loads would treat every
     // challenge as not-passed and re-queue already-cleared items.
     if (!ready) return
-    const session = resumeOrStart(unit)
-    sessionRef.current = session
-    setPhase(phaseFor(unit, session))
+    const run = resumeOrStart(unit)
+    runRef.current = run
+    setPhase(phaseFor(unit, run.session))
     // `resumeOrStart` is stable; re-runs only when the unit or readiness changes.
   }, [unit, ready, resumeOrStart])
 
   const answer = useCallback(
     (correct: boolean) => {
-      const session = sessionRef.current
+      const session = runRef.current?.session
       const current = session?.current()
       session?.answer(correct)
       // correct OR corrected clears the item; persist it as passed. A wrong
@@ -63,7 +64,7 @@ export function useChallengeRun(unit: Unit): ChallengeRunState {
   )
 
   const advance = useCallback(() => {
-    const session = sessionRef.current
+    const session = runRef.current?.session
     if (!session) return
     session.next()
     // Each cleared item was already persisted; completion is derived, so there
@@ -73,21 +74,25 @@ export function useChallengeRun(unit: Unit): ChallengeRunState {
   }, [])
 
   const restart = useCallback(() => {
-    const session = replay(unit)
-    sessionRef.current = session
-    setPhase(phaseFor(unit, session))
+    const run = replay(unit)
+    runRef.current = run
+    setPhase(phaseFor(unit, run.session))
     tick()
   }, [replay, unit])
 
-  const session = sessionRef.current
-  const summary = session?.summary() ?? { answered: 0, correct: 0, total: 0 }
+  const run = runRef.current
+  const session = run?.session
+  // All-time solved = the start-of-run snapshot + items cleared this run
+  // (summary().correct). The snapshot is frozen, so this only grows toward
+  // total/total and never double-counts a freshly-persisted pass.
+  const passedThisRun = session?.summary().correct ?? 0
 
   return {
     phase,
     challenge: phase === 'running' ? (session?.current()?.content ?? null) : null,
     step: session?.step ?? 0,
-    cleared: summary.correct,
-    total: summary.total,
+    solved: (run?.persistedPassedAtStart ?? 0) + passedThisRun,
+    total: run?.total ?? 0,
     answer,
     advance,
     restart,

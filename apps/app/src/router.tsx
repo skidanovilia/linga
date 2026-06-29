@@ -1,27 +1,38 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet } from 'react-router'
 import { unitLoader, unitsLoader } from './data/db'
 import { UnitsListPage } from './routes/UnitsListPage'
-import { UnitSessionLayout } from './routes/UnitSessionLayout'
-import { ChallengePage } from './routes/ChallengePage'
-import { ResultPage } from './routes/ResultPage'
 import { CardReviewPage } from './routes/CardReviewPage'
-import { ChallengeReviewPage } from './routes/ChallengeReviewPage'
-import { MemoPage } from './memo/MemoPage'
+import { ChallengeRunPage } from './routes/ChallengeRunPage'
+import { ChallengeRunProvider } from './challenges/run/ChallengeRunProvider'
 import { NotFound } from './routes/NotFound'
 import { Loading } from './routes/Loading'
 import { LoginPage } from './auth/LoginPage'
 import { RequireAuth } from './auth/RequireAuth'
 
+/**
+ * App layout: holds the app-wide challenge run state above every route, so a
+ * challenge run survives navigating between the units list and the run page
+ * (resume), while staying purely in memory. Sits inside <AuthProvider>.
+ */
+function AppLayout() {
+  return (
+    <ChallengeRunProvider>
+      <Outlet />
+    </ChallengeRunProvider>
+  )
+}
+
 export const router = createBrowserRouter([
   {
-    // Pathless root: renders its children through the default <Outlet> and
-    // provides the fallback shown while the initial async loader resolves.
+    // Pathless root: provides the app layout (challenge run state) plus the
+    // fallback shown while the initial async loader resolves.
+    element: <AppLayout />,
     hydrateFallbackElement: <Loading />,
     children: [
       { path: '/', element: <Navigate to="/units" replace /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
-      // Scheduled spaced-repetition reviews — one route per shelf, signed-in only.
+      // Memo cards — the spaced-repetition engine, signed-in only.
       {
         path: '/units/:unitId/review/cards',
         element: (
@@ -32,33 +43,14 @@ export const router = createBrowserRouter([
         loader: unitLoader,
         errorElement: <NotFound />,
       },
+      // Challenges — the clear-the-queue engine, signed-in only.
       {
-        path: '/units/:unitId/review/challenges',
+        path: '/units/:unitId/challenges',
         element: (
           <RequireAuth>
-            <ChallengeReviewPage />
+            <ChallengeRunPage />
           </RequireAuth>
         ),
-        loader: unitLoader,
-        errorElement: <NotFound />,
-      },
-      // Free practice — the original per-unit challenge run (never persists).
-      {
-        id: 'unit',
-        path: '/units/:unitId',
-        element: <UnitSessionLayout />,
-        loader: unitLoader,
-        errorElement: <NotFound />,
-        children: [
-          { index: true, element: <Navigate to="challenge/0" replace /> },
-          { path: 'challenge/:index', element: <ChallengePage /> },
-          { path: 'result', element: <ResultPage /> },
-        ],
-      },
-      // Free-practice memo deck, independent of the challenge session.
-      {
-        path: '/units/:unitId/memo',
-        element: <MemoPage />,
         loader: unitLoader,
         errorElement: <NotFound />,
       },

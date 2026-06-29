@@ -1,17 +1,6 @@
-// App-wide tunables. Keep run sizes here rather than inline so a single edit
-// changes how many items each practice run includes.
-
-/**
- * How many items a single *free-practice* run includes. The unit's items are
- * shuffled and capped to these counts; a unit with fewer items simply uses all
- * it has. (Scheduled spaced-repetition reviews use `SRS` below, not this.)
- */
-export const RUN_SIZE = {
-  /** Challenges per challenge run. */
-  challenges: 10,
-  /** Vocabulary cards per memo run. */
-  vocab: 10,
-} as const
+// App-wide tunables. Each engine's config lives here in one place: `SRS` for the
+// memo-card spaced-repetition engine, `CHALLENGE` for the clear-the-queue
+// challenge engine. One edit retunes a whole engine.
 
 const MINUTE = 60 * 1000
 const DAY = 24 * 60 * MINUTE
@@ -47,5 +36,15 @@ export const SRS = {
    * After a wrong answer the item is re-inserted once, this many steps further
    * along the same session (not immediately).
    */
+  requeueGap: 3,
+} as const
+
+/**
+ * The challenge ("clear-the-queue") engine's only knob: where a wrong answer
+ * re-enters the queue. There is deliberately no due/interval/box config here —
+ * challenges shuffle and re-queue, nothing more.
+ */
+export const CHALLENGE = {
+  /** A wrong challenge is re-inserted this many steps further along the run. */
   requeueGap: 3,
 } as const

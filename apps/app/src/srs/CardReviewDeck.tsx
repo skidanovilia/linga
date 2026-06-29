@@ -1,6 +1,6 @@
 import type { VocabEntry } from '../types/domain'
-import { MemoCard } from '../memo/MemoCard'
-import { ActiveCard } from '../memo/MemoDeck'
+import { MemoCard } from './MemoCard'
+import { ActiveCard } from './ActiveCard'
 
 interface CardReviewDeckProps {
   current: VocabEntry

@@ -1,7 +1,8 @@
-// The one persistence boundary. The engine and adapters depend on the
-// `ProgressStore` interface and never touch Supabase directly, so the backend
-// stays swappable. The Supabase implementation below is pointed at one progress
-// table per shelf (vocab_progress / challenge_progress).
+// The one persistence boundary for memo cards. The engine and adapter depend on
+// the `ProgressStore` interface and never touch Supabase directly, so the
+// backend stays swappable. The Supabase implementation below is pointed at the
+// card progress table (vocab_progress). Challenges no longer persist per-item
+// state — they record only module completion (see lib/queue/completionStore).
 
 import { supabase } from '../../data/supabase'
 import type { ProgressState, ReviewItem, Result } from './types'
@@ -29,8 +30,8 @@ export function toReviewItems<T>(
   }))
 }
 
-export type ProgressTable = 'vocab_progress' | 'challenge_progress'
-export type ProgressIdColumn = 'vocab_id' | 'challenge_id'
+export type ProgressTable = 'vocab_progress'
+export type ProgressIdColumn = 'vocab_id'
 
 interface ProgressRow {
   box: number

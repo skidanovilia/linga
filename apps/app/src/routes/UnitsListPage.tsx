@@ -1,15 +1,16 @@
-import { Link, useLoaderData } from 'react-router'
-import { Lock } from 'lucide-react'
+import { useLoaderData } from 'react-router'
+import { Check, Lock } from 'lucide-react'
 import type { Unit } from '../types/domain'
 import type { ShelfStatus } from '../lib/srs/shelf'
 import { useAuth } from '../auth/useAuth'
 import { useShelfStatus } from '../srs/useShelfStatus'
+import { useChallengeRuns } from '../challenges/run/useChallengeRuns'
+import type { ModuleStatus } from '../challenges/run/ChallengeRunProvider'
 import { formatDue } from '../srs/formatDue'
 import { PageShell } from '../components/PageShell'
 import { GeometricLogo } from '../components/GeometricLogo'
 import { Button, ButtonLink, buttonClasses } from '../components/Button'
 import { Card } from '../components/Card'
-import { Shape } from '../components/Shape'
 
 // Rotate the three primaries across the unit cards for the constructivist rhythm.
 const ACCENTS = ['red', 'blue', 'yellow'] as const
@@ -18,6 +19,7 @@ export function UnitsListPage() {
   const units = useLoaderData() as Unit[]
   const { user, signOut } = useAuth()
   const shelves = useShelfStatus(units)
+  const runs = useChallengeRuns()
 
   return (
     <PageShell className="gap-6 py-10">
@@ -28,7 +30,7 @@ export function UnitsListPage() {
             <h1 className="font-display text-4xl font-black uppercase leading-none tracking-tighter md:text-6xl">
               Linga
             </h1>
-            <p className="mt-1 font-content text-ink/70">Review what's due, or practice freely.</p>
+            <p className="mt-1 font-content text-ink/70">Review your cards and clear the challenges.</p>
           </div>
         </div>
         {user ? (
@@ -47,27 +49,25 @@ export function UnitsListPage() {
 
       <ul className="flex flex-col gap-4">
         {units.map((unit, i) => {
-          const status = shelves?.get(unit.id)
           const accent = ACCENTS[i % ACCENTS.length]
           return (
             <Card as="li" key={unit.id} interactive decoration={accent} className="px-5 py-4">
               <p className="font-content text-lg font-bold">{unit.title}</p>
 
-              {/* Scheduled review — one launch button per shelf, gated per shelf. */}
+              {/* Two independent engines — memo cards (SRS) and challenges. */}
               <div className="mt-3 flex gap-2">
                 {user ? (
                   <>
                     <ShelfButton
                       to={`/units/${unit.id}/review/cards`}
                       label="Review cards"
-                      variant="blue"
-                      status={status?.cards}
+                      status={shelves?.get(unit.id)}
                     />
-                    <ShelfButton
-                      to={`/units/${unit.id}/review/challenges`}
-                      label="Review challenges"
-                      variant="red"
-                      status={status?.challenges}
+                    <ChallengeEntry
+                      to={`/units/${unit.id}/challenges`}
+                      ready={runs.ready}
+                      status={runs.ready ? runs.statusFor(unit.id) : undefined}
+                      remaining={runs.remainingFor(unit.id)}
                     />
                   </>
                 ) : (
@@ -75,23 +75,6 @@ export function UnitsListPage() {
                     Sign in to review
                   </ButtonLink>
                 )}
-              </div>
-
-              {/* Free practice — never moves the shelf. */}
-              <div className="mt-3 flex items-center gap-3 font-content text-sm text-ink/60">
-                <span className="font-display font-bold uppercase tracking-wide">Practice freely:</span>
-                <Link
-                  to={`/units/${unit.id}`}
-                  className="inline-flex items-center gap-1.5 font-medium hover:text-bauhaus-blue"
-                >
-                  <Shape kind="square" color="blue" size={8} /> Challenges
-                </Link>
-                <Link
-                  to={`/units/${unit.id}/memo`}
-                  className="inline-flex items-center gap-1.5 font-medium hover:text-bauhaus-red"
-                >
-                  <Shape kind="circle" color="red" size={8} /> Memo
-                </Link>
               </div>
             </Card>
           )
@@ -102,21 +85,19 @@ export function UnitsListPage() {
 }
 
 /**
- * One shelf's launch button, its enabled/disabled state derived entirely from
- * the engine's shelf summary. `undefined` status = still loading. A disabled
+ * The memo-cards launch button, its enabled/disabled state derived entirely from
+ * the SRS engine's shelf summary. `undefined` status = still loading. A disabled
  * button shows the "all reviewed — next due at T" state and is non-interactive;
  * its dashed border + lock icon + flattened shadow carry the disabled state
- * without relying on color alone.
+ * without relying on color alone. Cards are never gated by challenge state.
  */
 function ShelfButton({
   to,
   label,
-  variant,
   status,
 }: {
   to: string
   label: string
-  variant: 'blue' | 'red'
   status: ShelfStatus | undefined
 }) {
   if (!status) {
@@ -132,7 +113,7 @@ function ShelfButton({
       <button
         type="button"
         disabled
-        className={buttonClasses({ variant, className: 'flex-1 flex-col text-sm' })}
+        className={buttonClasses({ variant: 'blue', className: 'flex-1 flex-col text-sm' })}
       >
         <span className="flex items-center gap-1.5">
           <Lock className="h-4 w-4" strokeWidth={3} />
@@ -146,7 +127,7 @@ function ShelfButton({
   }
 
   return (
-    <ButtonLink to={to} variant={variant} className="flex-1 flex-col text-sm">
+    <ButtonLink to={to} variant="blue" className="flex-1 flex-col text-sm">
       {label}
       <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal text-white/80">
         {shelfHint(status)}
@@ -160,4 +141,64 @@ function shelfHint(status: ShelfStatus): string {
   if (status.dueCount > 0) parts.push(`${status.dueCount} due`)
   if (status.newCount > 0) parts.push(`${status.newCount} new`)
   return parts.join(' · ')
+}
+
+/**
+ * The challenge launch entry — always enabled, reflecting exactly three states
+ * derived from module completion + the live in-memory run: not started (Start),
+ * in progress (Resume, with the remaining count), or completed (Replay, with a
+ * check). `undefined` status = still loading.
+ */
+function ChallengeEntry({
+  to,
+  ready,
+  status,
+  remaining,
+}: {
+  to: string
+  ready: boolean
+  status: ModuleStatus | undefined
+  remaining: number | null
+}) {
+  if (!ready || !status) {
+    return (
+      <span className="flex-1 rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
+        Challenges
+      </span>
+    )
+  }
+
+  const { label, hint, icon } = challengeEntryCopy(status, remaining)
+  return (
+    <ButtonLink to={to} variant="red" className="flex-1 flex-col text-sm">
+      <span className="flex items-center gap-1.5">
+        {icon}
+        {label}
+      </span>
+      {hint && (
+        <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal text-white/80">
+          {hint}
+        </span>
+      )}
+    </ButtonLink>
+  )
+}
+
+function challengeEntryCopy(status: ModuleStatus, remaining: number | null) {
+  switch (status) {
+    case 'in_progress':
+      return {
+        label: 'Resume challenges',
+        hint: remaining != null ? `${remaining} left` : 'In progress',
+        icon: null,
+      }
+    case 'completed':
+      return {
+        label: 'Replay challenges',
+        hint: 'Completed',
+        icon: <Check className="h-4 w-4" strokeWidth={3} />,
+      }
+    default:
+      return { label: 'Start challenges', hint: null, icon: null }
+  }
 }

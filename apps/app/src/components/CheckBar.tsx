@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react'
 import { ArrowRight, Check, X } from 'lucide-react'
 import type { ChallengeStatus } from '../challenges/types'
-import { Button } from './Button'
+import { Button, type ButtonVariant } from './Button'
 
 interface CheckBarProps {
   status: ChallengeStatus
@@ -12,12 +13,42 @@ interface CheckBarProps {
   onNext: () => void
 }
 
+type Feedback = { bg: string; text: string; icon: ReactNode; label: string; next: ButtonVariant }
+
+/**
+ * Per-status feedback panel. Correctness is triple-encoded — color, icon, and
+ * label — so color is never the sole signal. `corrected` is a *pass* (blue/red
+ * stay correct/incorrect) shown in amber: the queue still clears, but the
+ * tolerated spelling slip is flagged here and corrected inline in the answer.
+ */
+const feedback: Record<Exclude<ChallengeStatus, 'idle'>, Feedback> = {
+  correct: {
+    bg: 'bg-bauhaus-blue',
+    text: 'text-white',
+    icon: <Check className="h-6 w-6" strokeWidth={3} />,
+    label: 'Correct',
+    next: 'yellow',
+  },
+  corrected: {
+    bg: 'bg-bauhaus-yellow',
+    text: 'text-ink',
+    icon: <Check className="h-6 w-6" strokeWidth={3} />,
+    label: 'Almost — spelling fixed',
+    next: 'outline',
+  },
+  incorrect: {
+    bg: 'bg-bauhaus-red',
+    text: 'text-white',
+    icon: <X className="h-6 w-6" strokeWidth={3} />,
+    label: 'Not quite',
+    next: 'yellow',
+  },
+}
+
 /**
  * The universal bottom bar shared by every challenge type: a "Check" button
- * while idle, then a blue/red feedback panel (revealing the correct answer when
- * wrong) with a "Next" button. Correctness is triple-encoded — color (blue vs
- * red, colorblind-safe), icon (check vs cross), and label — so color is never
- * the sole signal.
+ * while idle, then a feedback panel (revealing the correct answer when wrong)
+ * with a "Next" button.
  */
 export function CheckBar({ status, canCheck, correctAnswer, onCheck, onNext }: CheckBarProps) {
   if (status === 'idle') {
@@ -30,26 +61,24 @@ export function CheckBar({ status, canCheck, correctAnswer, onCheck, onNext }: C
     )
   }
 
-  const correct = status === 'correct'
+  const panel = feedback[status]
   return (
     <div
-      className={`mt-8 rounded-none border-2 md:border-4 border-ink p-4 text-white shadow-hard md:shadow-hard-lg ${
-        correct ? 'bg-bauhaus-blue' : 'bg-bauhaus-red'
-      }`}
+      className={`mt-8 rounded-none border-2 md:border-4 border-ink p-4 shadow-hard md:shadow-hard-lg ${panel.bg} ${panel.text}`}
     >
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-tight">
-            {correct ? <Check className="h-6 w-6" strokeWidth={3} /> : <X className="h-6 w-6" strokeWidth={3} />}
-            {correct ? 'Correct' : 'Not quite'}
+            {panel.icon}
+            {panel.label}
           </p>
-          {!correct && (
+          {status === 'incorrect' && (
             <p className="mt-1 font-content text-sm">
               Correct answer: <span className="font-bold">{correctAnswer}</span>
             </p>
           )}
         </div>
-        <Button variant="yellow" shape="square" onClick={onNext} className="shrink-0">
+        <Button variant={panel.next} shape="square" onClick={onNext} className="shrink-0">
           Next
           <ArrowRight className="h-5 w-5" strokeWidth={3} />
         </Button>

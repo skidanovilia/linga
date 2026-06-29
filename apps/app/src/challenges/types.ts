@@ -6,12 +6,22 @@ export interface AnswerByType {
   fill_choice: string[]
   order: string[]
   fill_type: string
+  /** translate — the learner's free-typed Georgian sentence. */
+  translate: string
 }
 
 export type AnswerOf<T extends ChallengeType> = AnswerByType[T]
 export type DataOf<T extends ChallengeType> = Extract<Challenge, { type: T }>['data']
 
-export type ChallengeStatus = 'idle' | 'correct' | 'incorrect'
+/**
+ * `corrected` is a *pass* (the queue clears the item) that still flags a single
+ * tolerated spelling slip — `translate` uses it; the other types only ever
+ * resolve to `correct` / `incorrect`.
+ */
+export type ChallengeStatus = 'idle' | 'correct' | 'corrected' | 'incorrect'
+
+/** The three terminal outcomes a check can produce (no `idle`). */
+export type ChallengeOutcomeStatus = 'correct' | 'corrected' | 'incorrect'
 
 /**
  * Every challenge component is a *controlled input*: it renders the prompt and
@@ -35,8 +45,16 @@ export interface ChallengeDef<T extends ChallengeType> {
   emptyAnswer: AnswerOf<T>
   /** Whether the current answer is complete enough to enable "Check". */
   isAnswerable: (value: AnswerOf<T>, data: DataOf<T>) => boolean
-  /** Pure correctness check. */
+  /** Pure correctness check (binary). */
   check: (value: AnswerOf<T>, data: DataOf<T>) => boolean
-  /** Human-readable correct answer, revealed when the user is wrong. */
-  describeAnswer: (data: DataOf<T>) => string
+  /**
+   * Optional richer evaluation. When present, the renderer uses it instead of
+   * `check` so a type can resolve a third `corrected` outcome (a tolerated
+   * spelling slip that still passes). `corrected` and `correct` both clear the
+   * queue; only `incorrect` re-queues.
+   */
+  evaluate?: (value: AnswerOf<T>, data: DataOf<T>) => { status: ChallengeOutcomeStatus }
+  /** Human-readable correct answer, revealed when the user is wrong. Receives
+   *  the current `value` so a type can reveal the closest accepted answer. */
+  describeAnswer: (data: DataOf<T>, value: AnswerOf<T>) => string
 }

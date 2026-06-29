@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Challenge, ChallengeType } from '../types/domain'
 import { CheckBar } from '../components/CheckBar'
 import { registry } from './registry'
-import type { AnswerOf, ChallengeDef, ChallengeStatus } from './types'
+import type { AnswerOf, ChallengeDef, ChallengeOutcomeStatus, ChallengeStatus } from './types'
 
 interface ChallengeRendererProps {
   challenge: Challenge
@@ -27,9 +27,14 @@ export function ChallengeRenderer({ challenge, onResult, onNext }: ChallengeRend
   const [status, setStatus] = useState<ChallengeStatus>('idle')
 
   const handleCheck = () => {
-    const correct = def.check(value, challenge.data)
-    setStatus(correct ? 'correct' : 'incorrect')
-    onResult(correct)
+    // Prefer the richer `evaluate` (which can return a tolerated `corrected`
+    // pass); fall back to the binary `check`. Both `correct` and `corrected`
+    // clear the queue — only `incorrect` re-queues the item.
+    const outcome: { status: ChallengeOutcomeStatus } = def.evaluate
+      ? def.evaluate(value, challenge.data)
+      : { status: def.check(value, challenge.data) ? 'correct' : 'incorrect' }
+    setStatus(outcome.status)
+    onResult(outcome.status !== 'incorrect')
   }
 
   return (
@@ -46,7 +51,7 @@ export function ChallengeRenderer({ challenge, onResult, onNext }: ChallengeRend
       <CheckBar
         status={status}
         canCheck={status === 'idle' && def.isAnswerable(value, challenge.data)}
-        correctAnswer={def.describeAnswer(challenge.data)}
+        correctAnswer={def.describeAnswer(challenge.data, value)}
         onCheck={handleCheck}
         onNext={onNext}
       />

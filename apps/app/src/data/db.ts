@@ -6,10 +6,12 @@ import { supabase } from './supabase'
 // read through this module keeps the source swappable: pages and components
 // consume the `Unit` shape these functions return and stay untouched.
 
-// One round-trip per query: pull the unit with its nested vocab + challenges.
-// The vocab/challenge `id`s are surfaced because the review shelf keys each
-// item's Leitner box on the content row's stable UUID.
-const UNIT_SELECT = 'id, title, position, vocab(id, ka, ru), challenges(id, type, data)'
+// One round-trip per query: pull the unit with its nested vocab + challenges,
+// plus the optional grammar pages. The vocab/challenge `id`s are surfaced because
+// the review shelf keys each item's Leitner box on the content row's stable UUID.
+// Grammar pages carry no user state, so only their content + order matter.
+const UNIT_SELECT =
+  'id, title, position, vocab(id, ka, ru), challenges(id, type, data), grammar_pages(position, content)'
 
 interface UnitRow {
   id: string
@@ -17,6 +19,7 @@ interface UnitRow {
   position: number
   vocab: VocabEntry[]
   challenges: Challenge[]
+  grammar_pages: { position: number; content: string }[]
 }
 
 // Map a DB row onto the domain `Unit`. Vocab/challenges come back in their
@@ -26,6 +29,8 @@ function toUnit(row: UnitRow): Unit {
   return {
     id: row.id,
     title: row.title,
+    // PostgREST doesn't guarantee embedded-resource order, so sort by position.
+    grammar: [...row.grammar_pages].sort((a, b) => a.position - b.position).map((p) => p.content),
     vocab: row.vocab.map(({ id, ka, ru }) => ({ id, ka, ru })),
     challenges: row.challenges.map(
       (c) => ({ id: c.id, type: c.type, data: c.data }) as Challenge,

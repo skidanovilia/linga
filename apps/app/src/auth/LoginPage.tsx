@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
-import { X } from 'lucide-react'
+import { Icon } from '@mdi/react'
+import { mdiClose } from '@mdi/js'
 import { useAuth } from './useAuth'
 import { PageShell } from '../components/PageShell'
 import { GeometricLogo } from '../components/GeometricLogo'
@@ -77,7 +78,7 @@ export function LoginPage() {
 
         {error && (
           <p className="flex items-center gap-1.5 font-content text-sm font-bold text-bauhaus-red">
-            <X className="h-4 w-4 shrink-0" strokeWidth={3} />
+            <Icon path={mdiClose} size="1rem" className="shrink-0" />
             {error}
           </p>
         )}

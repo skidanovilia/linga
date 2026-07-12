@@ -3,6 +3,7 @@ import { unitLoader, unitsLoader } from './data/db'
 import { UnitsListPage } from './routes/UnitsListPage'
 import { CardReviewPage } from './routes/CardReviewPage'
 import { ChallengeRunPage } from './routes/ChallengeRunPage'
+import { GrammarPage } from './routes/GrammarPage'
 import { ChallengeRunProvider } from './challenges/run/ChallengeRunProvider'
 import { NotFound } from './routes/NotFound'
 import { Loading } from './routes/Loading'
@@ -38,6 +39,17 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <CardReviewPage />
+          </RequireAuth>
+        ),
+        loader: unitLoader,
+        errorElement: <NotFound />,
+      },
+      // Grammar — a stateless, read-only paged markdown section, signed-in only.
+      {
+        path: '/units/:unitId/grammar',
+        element: (
+          <RequireAuth>
+            <GrammarPage />
           </RequireAuth>
         ),
         loader: unitLoader,

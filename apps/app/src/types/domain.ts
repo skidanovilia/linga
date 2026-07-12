@@ -67,6 +67,9 @@ export interface Unit {
   /** Stable, authored id used in URLs (e.g. "food-1"). */
   id: string
   title: string
+  /** Optional grammar section: ordered markdown pages, read-only and stateless.
+   *  Empty array = no section (the grammar button is then omitted entirely). */
+  grammar: string[]
   /** Word pairs powering the unit's memo-card deck. */
   vocab: VocabEntry[]
   challenges: Challenge[]

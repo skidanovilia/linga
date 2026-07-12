@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { ArrowRight, Check, X } from 'lucide-react'
+import { Icon } from '@mdi/react'
+import { mdiArrowRight, mdiCheck, mdiClose } from '@mdi/js'
 import type { ChallengeStatus } from '../challenges/types'
 import { Button, type ButtonVariant } from './Button'
 
@@ -25,21 +26,21 @@ const feedback: Record<Exclude<ChallengeStatus, 'idle'>, Feedback> = {
   correct: {
     bg: 'bg-bauhaus-blue',
     text: 'text-white',
-    icon: <Check className="h-6 w-6" strokeWidth={3} />,
+    icon: <Icon path={mdiCheck} size="1.5rem" />,
     label: 'Correct',
     next: 'yellow',
   },
   corrected: {
     bg: 'bg-bauhaus-yellow',
     text: 'text-ink',
-    icon: <Check className="h-6 w-6" strokeWidth={3} />,
+    icon: <Icon path={mdiCheck} size="1.5rem" />,
     label: 'Almost — spelling fixed',
     next: 'outline',
   },
   incorrect: {
     bg: 'bg-bauhaus-red',
     text: 'text-white',
-    icon: <X className="h-6 w-6" strokeWidth={3} />,
+    icon: <Icon path={mdiClose} size="1.5rem" />,
     label: 'Not quite',
     next: 'yellow',
   },
@@ -80,7 +81,7 @@ export function CheckBar({ status, canCheck, correctAnswer, onCheck, onNext }: C
         </div>
         <Button variant={panel.next} shape="square" onClick={onNext} className="shrink-0">
           Next
-          <ArrowRight className="h-5 w-5" strokeWidth={3} />
+          <Icon path={mdiArrowRight} size="1.25rem" />
         </Button>
       </div>
     </div>

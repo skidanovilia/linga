@@ -1,5 +1,6 @@
 import { useLoaderData } from 'react-router'
-import { Check, Lock } from 'lucide-react'
+import { Icon } from '@mdi/react'
+import { mdiCheck, mdiLock } from '@mdi/js'
 import type { Unit } from '../types/domain'
 import type { ShelfStatus } from '../lib/srs/shelf'
 import { useAuth } from '../auth/useAuth'
@@ -54,10 +55,20 @@ export function UnitsListPage() {
             <Card as="li" key={unit.id} interactive decoration={accent} className="px-5 py-4">
               <p className="font-content text-lg font-bold">{unit.title}</p>
 
-              {/* Two independent engines — memo cards (SRS) and challenges. */}
-              <div className="mt-3 flex gap-2">
+              {/* Full-width vertical stack of the unit's actions: grammar (only
+                  when a section exists), memo cards, challenges. */}
+              <div className="mt-3 flex flex-col gap-2">
                 {user ? (
                   <>
+                    {unit.grammar.length > 0 && (
+                      <ButtonLink
+                        to={`/units/${unit.id}/grammar`}
+                        variant="yellow"
+                        className="w-full text-sm"
+                      >
+                        Grammar
+                      </ButtonLink>
+                    )}
                     <ShelfButton
                       to={`/units/${unit.id}/review/cards`}
                       label="Review cards"
@@ -71,7 +82,7 @@ export function UnitsListPage() {
                     />
                   </>
                 ) : (
-                  <ButtonLink to="/login" variant="yellow" className="flex-1 text-sm">
+                  <ButtonLink to="/login" variant="yellow" className="w-full text-sm">
                     Sign in to review
                   </ButtonLink>
                 )}
@@ -102,7 +113,7 @@ function ShelfButton({
 }) {
   if (!status) {
     return (
-      <span className="flex-1 rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
+      <span className="w-full rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
         {label}
       </span>
     )
@@ -113,10 +124,10 @@ function ShelfButton({
       <button
         type="button"
         disabled
-        className={buttonClasses({ variant: 'blue', className: 'flex-1 flex-col text-sm' })}
+        className={buttonClasses({ variant: 'blue', className: 'w-full flex-col text-sm' })}
       >
         <span className="flex items-center gap-1.5">
-          <Lock className="h-4 w-4" strokeWidth={3} />
+          <Icon path={mdiLock} size="1rem" />
           {label}
         </span>
         <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal">
@@ -127,7 +138,7 @@ function ShelfButton({
   }
 
   return (
-    <ButtonLink to={to} variant="blue" className="flex-1 flex-col text-sm">
+    <ButtonLink to={to} variant="blue" className="w-full flex-col text-sm">
       {label}
       <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal text-white/80">
         {shelfHint(status)}
@@ -162,7 +173,7 @@ function ChallengeEntry({
 }) {
   if (!ready || !status) {
     return (
-      <span className="flex-1 rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
+      <span className="w-full rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
         Challenges
       </span>
     )
@@ -170,7 +181,7 @@ function ChallengeEntry({
 
   const { label, hint, icon } = challengeEntryCopy(status, remaining)
   return (
-    <ButtonLink to={to} variant="red" className="flex-1 flex-col text-sm">
+    <ButtonLink to={to} variant="red" className="w-full flex-col text-sm">
       <span className="flex items-center gap-1.5">
         {icon}
         {label}
@@ -196,7 +207,7 @@ function challengeEntryCopy(status: ModuleStatus, remaining: number | null) {
       return {
         label: 'Replay challenges',
         hint: 'Completed',
-        icon: <Check className="h-4 w-4" strokeWidth={3} />,
+        icon: <Icon path={mdiCheck} size="1rem" />,
       }
     default:
       return { label: 'Start challenges', hint: null, icon: null }

@@ -7,6 +7,7 @@ import {
   type ClearQueueSession,
 } from '../../lib/queue/clearQueue'
 import type { ChallengeProgressStore } from '../../lib/queue/challengeProgressStore'
+import type { UnitCompletionStore } from '../../lib/queue/unitCompletionStore'
 import { useAuth } from '../../auth/useAuth'
 import { challengeAdapter } from './challengeAdapter'
 
@@ -34,14 +35,19 @@ export interface ChallengeRunContextValue {
   statusFor: (unit: Unit) => ModuleStatus
   /** Challenges in this module not yet passed (the queue size on next entry). */
   remainingFor: (unit: Unit) => number
+  /** Whether this unit has ever been completed — the permanent badge. Read from
+   *  the write-once `unit_completion` set, NOT derived from `passed`, so it stays
+   *  true after a replay resets the counter back to 0/total. */
+  hasUnitCompletion: (unit: Unit) => boolean
   /** Resume the live run for a module, or start a fresh shuffled one from its
    *  not-passed challenges. */
   resumeOrStart: (unit: Unit) => ChallengeRun
   /** Replay: reset the module's persisted progress, then start a fresh run over
    *  all of its challenges. */
   replay: (unit: Unit) => ChallengeRun
-  /** Persist one challenge as passed once it is cleared. */
-  markPassed: (challengeId: string) => Promise<void>
+  /** Persist one challenge as passed once it is cleared. The unit is needed to
+   *  detect the last pass and light the permanent completion badge. */
+  markPassed: (unit: Unit, challengeId: string) => Promise<void>
 }
 
 export const ChallengeRunContext = createContext<ChallengeRunContextValue | null>(null)
@@ -66,16 +72,25 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
 
   const runs = useRef<Map<string, ChallengeRun>>(new Map())
   const storeRef = useRef<ChallengeProgressStore | null>(null)
+  const completionStoreRef = useRef<UnitCompletionStore | null>(null)
   // Mirror of `passed` for synchronous reads inside `register` (which must stay
   // a stable callback so the run-page effect does not re-fire mid-run).
   const passedRef = useRef<Set<string>>(new Set())
+  // Mirror of `completed` for synchronous reads/dedupe inside `markPassed`.
+  const completedRef = useRef<Set<string>>(new Set())
   const prevUserId = useRef<string | undefined>(undefined)
   const [passed, setPassed] = useState<Set<string>>(new Set())
+  const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [ready, setReady] = useState(false)
 
   const applyPassed = useCallback((next: Set<string>) => {
     passedRef.current = next
     setPassed(next)
+  }, [])
+
+  const applyCompleted = useCallback((next: Set<string>) => {
+    completedRef.current = next
+    setCompleted(next)
   }, [])
 
   useEffect(() => {
@@ -90,23 +105,30 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
 
     if (!userId) {
       storeRef.current = null
+      completionStoreRef.current = null
       applyPassed(new Set())
+      applyCompleted(new Set())
       return
     }
 
     let active = true
     const store = challengeAdapter.createStore(userId)
+    const completionStore = challengeAdapter.createCompletionStore(userId)
     storeRef.current = store
-    store
-      .loadPassed()
-      .then((ids) => {
+    completionStoreRef.current = completionStore
+    // Load both durable sets before going ready: the resettable per-item passes
+    // (queue/counter) and the permanent per-unit completions (badge).
+    Promise.all([store.loadPassed(), completionStore.loadCompletedUnits()])
+      .then(([passedIds, completedIds]) => {
         if (!active) return
-        applyPassed(ids)
+        applyPassed(passedIds)
+        applyCompleted(completedIds)
         setReady(true)
       })
       .catch(() => {
         if (active) {
           applyPassed(new Set())
+          applyCompleted(new Set())
           setReady(true)
         }
       })
@@ -114,7 +136,7 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false
     }
-  }, [userId, applyPassed])
+  }, [userId, applyPassed, applyCompleted])
 
   const register = useCallback((unit: Unit): ChallengeRun => {
     // Build the queue from exactly this module's not-passed challenges.
@@ -143,17 +165,39 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
     [register],
   )
 
-  const markPassed = useCallback(async (challengeId: string): Promise<void> => {
-    if (passedRef.current.has(challengeId)) return
-    applyPassed(withId(passedRef.current, challengeId)) // optimistic
-    try {
-      await storeRef.current?.markPassed(challengeId)
-    } catch (err) {
-      // The item is cleared locally; a single-user account tolerates a lost
-      // write. Surface it without breaking the run.
-      console.error('Failed to persist challenge progress', err)
-    }
-  }, [applyPassed])
+  // Light the permanent badge for a unit. Idempotent locally (skip if already
+  // lit) and durably (the store's insert is on-conflict-do-nothing). Optimistic:
+  // the badge shows immediately; a failed write is tolerated like markPassed.
+  const markUnitCompleted = useCallback(
+    (unitId: string): void => {
+      if (completedRef.current.has(unitId)) return
+      applyCompleted(withId(completedRef.current, unitId))
+      completionStoreRef.current?.markUnitCompleted(unitId).catch((err) => {
+        console.error('Failed to persist unit completion', err)
+      })
+    },
+    [applyCompleted],
+  )
+
+  const markPassed = useCallback(
+    async (unit: Unit, challengeId: string): Promise<void> => {
+      if (passedRef.current.has(challengeId)) return
+      const next = withId(passedRef.current, challengeId)
+      applyPassed(next) // optimistic
+      // If this pass clears the unit's last not-passed challenge, the unit is now
+      // complete — light the permanent badge. Uses the same derivation as the
+      // unit list, so a zero-challenge unit (never 'completed') never earns it.
+      if (statusFor(unit, next) === 'completed') markUnitCompleted(unit.id)
+      try {
+        await storeRef.current?.markPassed(challengeId)
+      } catch (err) {
+        // The item is cleared locally; a single-user account tolerates a lost
+        // write. Surface it without breaking the run.
+        console.error('Failed to persist challenge progress', err)
+      }
+    },
+    [applyPassed, markUnitCompleted],
+  )
 
   const replay = useCallback(
     (unit: Unit): ChallengeRun => {
@@ -173,11 +217,12 @@ export function ChallengeRunProvider({ children }: { children: ReactNode }) {
       ready,
       statusFor: (unit) => statusFor(unit, passed),
       remainingFor: (unit) => unit.challenges.filter((c) => !passed.has(c.id)).length,
+      hasUnitCompletion: (unit) => completed.has(unit.id),
       resumeOrStart,
       replay,
       markPassed,
     }),
-    [ready, passed, resumeOrStart, replay, markPassed],
+    [ready, passed, completed, resumeOrStart, replay, markPassed],
   )
 
   return <ChallengeRunContext.Provider value={value}>{children}</ChallengeRunContext.Provider>

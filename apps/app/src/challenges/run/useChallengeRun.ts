@@ -57,10 +57,11 @@ export function useChallengeRun(unit: Unit): ChallengeRunState {
       const current = session?.current()
       session?.answer(correct)
       // correct OR corrected clears the item; persist it as passed. A wrong
-      // answer re-queues it (handled by the engine) and writes nothing.
-      if (correct && current) void markPassed(current.id)
+      // answer re-queues it (handled by the engine) and writes nothing. The unit
+      // is passed so the provider can light the permanent badge on the last pass.
+      if (correct && current) void markPassed(unit, current.id)
     },
-    [markPassed],
+    [markPassed, unit],
   )
 
   const advance = useCallback(() => {

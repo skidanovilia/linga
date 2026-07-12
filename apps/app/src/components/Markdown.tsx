@@ -36,6 +36,17 @@ const components: Components = {
     <blockquote className="mb-3 border-l-4 border-ink pl-4 italic text-ink/80">{children}</blockquote>
   ),
   hr: () => <hr className="my-4 border-t-2 border-ink" />,
+  // GFM tables (remark-gfm). Wrap in a scroll container so wide grids never
+  // push the page into horizontal overflow.
+  table: ({ children }) => (
+    <div className="mb-3 overflow-x-auto">
+      <table className="w-full border-collapse text-left text-[0.95em]">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="border-2 border-ink bg-muted px-3 py-1.5 font-bold">{children}</th>
+  ),
+  td: ({ children }) => <td className="border-2 border-ink px-3 py-1.5">{children}</td>,
   pre: ({ children }) => (
     <pre className="mb-3 overflow-x-auto rounded-none border-2 border-ink bg-muted p-3">{children}</pre>
   ),

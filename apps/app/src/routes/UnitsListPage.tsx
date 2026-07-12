@@ -12,6 +12,7 @@ import { PageShell } from '../components/PageShell'
 import { GeometricLogo } from '../components/GeometricLogo'
 import { Button, ButtonLink, buttonClasses } from '../components/Button'
 import { Card } from '../components/Card'
+import { CompletionBadge } from '../components/CompletionBadge'
 
 // Rotate the three primaries across the unit cards for the constructivist rhythm.
 const ACCENTS = ['red', 'blue', 'yellow'] as const
@@ -53,7 +54,10 @@ export function UnitsListPage() {
           const accent = ACCENTS[i % ACCENTS.length]
           return (
             <Card as="li" key={unit.id} interactive decoration={accent} className="px-5 py-4">
-              <p className="font-content text-lg font-bold">{unit.title}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-content text-lg font-bold">{unit.title}</p>
+                {user && runs.ready && runs.hasUnitCompletion(unit) && <CompletionBadge />}
+              </div>
 
               {/* Full-width vertical stack of the unit's actions: grammar (only
                   when a section exists), memo cards, challenges. */}

@@ -10,6 +10,10 @@ import {
   SupabaseChallengeProgressStore,
   type ChallengeProgressStore,
 } from '../../lib/queue/challengeProgressStore'
+import {
+  SupabaseUnitCompletionStore,
+  type UnitCompletionStore,
+} from '../../lib/queue/unitCompletionStore'
 
 export const challengeAdapter = {
   kind: 'challenges' as const,
@@ -17,7 +21,10 @@ export const challengeAdapter = {
    *  engine shuffles into a queue. */
   loadItems: (unit: Unit): { id: string; content: Challenge }[] =>
     unit.challenges.map((c) => ({ id: c.id, content: c })),
-  /** A per-user store bound to challenge_progress. */
+  /** A per-user store bound to challenge_progress (resettable per-item passes). */
   createStore: (userId: string): ChallengeProgressStore =>
     new SupabaseChallengeProgressStore(userId),
+  /** A per-user store bound to unit_completion (permanent, write-once badge). */
+  createCompletionStore: (userId: string): UnitCompletionStore =>
+    new SupabaseUnitCompletionStore(userId),
 }

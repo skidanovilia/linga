@@ -74,3 +74,21 @@ export async function unitLoader({ params }: LoaderFunctionArgs): Promise<Unit> 
   }
   return unit
 }
+
+// --- Profile statistics ---------------------------------------------------
+
+/**
+ * Count of "learned words": vocab the signed-in user has started — i.e. has any
+ * `vocab_progress` row for. RLS scopes the table to `auth.uid()`, so a bare count
+ * over the whole table already means "this user's rows". Head-only: no rows are
+ * transferred, just the count. Call only when signed in.
+ */
+export async function getLearnedWordsCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('vocab_progress')
+    .select('vocab_id', { count: 'exact', head: true })
+  if (error) {
+    throw new Error(error.message)
+  }
+  return count ?? 0
+}

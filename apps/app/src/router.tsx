@@ -1,10 +1,12 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router'
 import { unitLoader, unitsLoader } from './data/db'
 import { UnitsListPage } from './routes/UnitsListPage'
+import { ProfilePage } from './routes/ProfilePage'
 import { CardReviewPage } from './routes/CardReviewPage'
 import { ChallengeRunPage } from './routes/ChallengeRunPage'
 import { GrammarPage } from './routes/GrammarPage'
 import { ChallengeRunProvider } from './challenges/run/ChallengeRunProvider'
+import { BottomNav } from './components/BottomNav'
 import { NotFound } from './routes/NotFound'
 import { Loading } from './routes/Loading'
 import { LoginPage } from './auth/LoginPage'
@@ -23,6 +25,23 @@ function AppLayout() {
   )
 }
 
+/**
+ * The shell for the two top-level destinations (Explore + Profile): it mounts the
+ * persistent bottom nav and pads its content so nothing hides behind the fixed
+ * bar. The focused sub-screens (review / grammar / challenges) sit outside this
+ * layout and keep their own back-link chrome with no bottom nav.
+ */
+function ExploreLayout() {
+  return (
+    <>
+      <div className="min-h-full pb-24">
+        <Outlet />
+      </div>
+      <BottomNav />
+    </>
+  )
+}
+
 export const router = createBrowserRouter([
   {
     // Pathless root: provides the app layout (challenge run state) plus the
@@ -32,7 +51,21 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <Navigate to="/units" replace /> },
       { path: '/login', element: <LoginPage /> },
-      { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
+      // Top-level destinations share the bottom-nav shell.
+      {
+        element: <ExploreLayout />,
+        children: [
+          { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
+          {
+            path: '/profile',
+            element: (
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            ),
+          },
+        ],
+      },
       // Memo cards — the spaced-repetition engine, signed-in only.
       {
         path: '/units/:unitId/review/cards',

@@ -8,3 +8,7 @@ dist
 .idea
 dev-dist
 *.tsbuildinfo
+/.tokensave
+/.claude/settings.json
+/.claude/.headroom_wrap_marker.json
+graphify-out

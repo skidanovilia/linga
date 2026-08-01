@@ -1,11 +1,17 @@
-import type { VocabEntry } from '../types/domain'
 import { MemoCard } from './MemoCard'
 import { ActiveCard } from './ActiveCard'
 
+/** A card's content, already resolved to which side shows first. */
+export interface DeckCard {
+  id: string
+  front: string
+  back: string
+}
+
 interface CardReviewDeckProps {
-  current: VocabEntry
+  current: DeckCard
   /** The next card, shown faded behind the active one. */
-  upcoming: VocabEntry | null
+  upcoming: DeckCard | null
   index: number
   total: number
   /** Swipe right = "know" (correct), left = "don't know" (wrong). */
@@ -29,13 +35,14 @@ export function CardReviewDeck({
       <div className="relative h-80 w-full">
         {upcoming && (
           <div className="absolute inset-0 z-0 scale-95 opacity-60">
-            <MemoCard front={upcoming.ru} back={upcoming.ka} flipped={false} elevated={false} />
+            <MemoCard front={upcoming.front} back={upcoming.back} flipped={false} elevated={false} />
           </div>
         )}
         {/* Key by id + position so a requeued card remounts with fresh state. */}
         <ActiveCard
           key={`${index}-${current.id}`}
-          entry={current}
+          front={current.front}
+          back={current.back}
           onSwipe={(direction) => onAnswer(direction > 0)}
         />
       </div>

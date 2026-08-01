@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { animate, motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
-import type { VocabEntry } from '../types/domain'
 import { MemoCard } from './MemoCard'
 
 /** Past this horizontal offset (px) or pointer velocity, a release commits a swipe. */
@@ -8,7 +7,8 @@ const SWIPE_OFFSET = 120
 const SWIPE_VELOCITY = 500
 
 export interface ActiveCardProps {
-  entry: VocabEntry
+  front: string
+  back: string
   onSwipe: (direction: number) => void
 }
 
@@ -18,7 +18,7 @@ export interface ActiveCardProps {
  * and reports the direction; otherwise it springs back to center. Used by the
  * scheduled card-review deck.
  */
-export function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
+export function ActiveCard({ front, back, onSwipe }: ActiveCardProps) {
   const [flipped, setFlipped] = useState(false)
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-300, 300], [-18, 18])
@@ -53,8 +53,8 @@ export function ActiveCard({ entry, onSwipe }: ActiveCardProps) {
       className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
     >
       <MemoCard
-        front={entry.ru}
-        back={entry.ka}
+        front={front}
+        back={back}
         flipped={flipped}
         onFlip={() => setFlipped((f) => !f)}
       />

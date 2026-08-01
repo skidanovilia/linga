@@ -5,6 +5,7 @@ import { ProfilePage } from './routes/ProfilePage'
 import { CardReviewPage } from './routes/CardReviewPage'
 import { ChallengeRunPage } from './routes/ChallengeRunPage'
 import { GrammarPage } from './routes/GrammarPage'
+import { FreeVocabPracticePage } from './routes/FreeVocabPracticePage'
 import { ChallengeRunProvider } from './challenges/run/ChallengeRunProvider'
 import { BottomNav } from './components/BottomNav'
 import { NotFound } from './routes/NotFound'
@@ -75,6 +76,17 @@ export const router = createBrowserRouter([
           </RequireAuth>
         ),
         loader: unitLoader,
+        errorElement: <NotFound />,
+      },
+      // Free vocabulary practice — a cross-unit shuffle game, no persistence.
+      {
+        path: '/practice/vocab',
+        element: (
+          <RequireAuth>
+            <FreeVocabPracticePage />
+          </RequireAuth>
+        ),
+        loader: unitsLoader,
         errorElement: <NotFound />,
       },
       // Grammar — a stateless, read-only paged markdown section, signed-in only.

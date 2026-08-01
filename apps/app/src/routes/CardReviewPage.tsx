@@ -37,8 +37,20 @@ export function CardReviewPage() {
           <ReviewSummary summary={review.summary} onRestart={review.restart} />
         ) : review.item ? (
           <CardReviewDeck
-            current={review.item.content}
-            upcoming={review.upcoming?.content ?? null}
+            current={{
+              id: review.item.content.id,
+              front: review.item.content.ru,
+              back: review.item.content.ka,
+            }}
+            upcoming={
+              review.upcoming
+                ? {
+                    id: review.upcoming.content.id,
+                    front: review.upcoming.content.ru,
+                    back: review.upcoming.content.ka,
+                  }
+                : null
+            }
             index={review.index}
             total={review.total}
             onAnswer={handleSwipe}

@@ -1,21 +1,34 @@
 import { NavLink } from 'react-router'
 import { Icon } from '@mdi/react'
-import { mdiAccount, mdiAccountOutline, mdiCompass, mdiCompassOutline } from '@mdi/js'
+import {
+  mdiAccount,
+  mdiAccountOutline,
+  mdiCompass,
+  mdiCompassOutline,
+  mdiGamepadVariant,
+  mdiGamepadVariantOutline,
+} from '@mdi/js'
 
 /**
- * The app's two top-level destinations. The outline glyph marks the inactive
+ * The app's top-level destinations. The outline glyph marks the inactive
  * tab, the filled one the active tab — state is encoded by icon + label + ink
  * weight, never color alone (there is no color on this bar).
  */
 const ITEMS = [
   { to: '/units', label: 'Explore', icon: mdiCompassOutline, activeIcon: mdiCompass },
+  {
+    to: '/practice',
+    label: 'Practice',
+    icon: mdiGamepadVariantOutline,
+    activeIcon: mdiGamepadVariant,
+  },
   { to: '/profile', label: 'Profile', icon: mdiAccountOutline, activeIcon: mdiAccount },
 ] as const
 
 /**
- * The persistent two-item bottom navigation shown on the top-level Explore and
- * Profile screens. Fixed to the viewport bottom with a thick ink top rule; the
- * layout that mounts it pads its content so nothing hides behind the bar.
+ * The persistent bottom navigation shown on the top-level Explore, Practice,
+ * and Profile screens. Fixed to the viewport bottom with a thick ink top rule;
+ * the layout that mounts it pads its content so nothing hides behind the bar.
  */
 export function BottomNav() {
   return (

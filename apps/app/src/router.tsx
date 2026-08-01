@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router'
 import { unitLoader, unitsLoader } from './data/db'
 import { UnitsListPage } from './routes/UnitsListPage'
+import { GamesListPage } from './routes/GamesListPage'
 import { ProfilePage } from './routes/ProfilePage'
 import { CardReviewPage } from './routes/CardReviewPage'
 import { ChallengeRunPage } from './routes/ChallengeRunPage'
@@ -26,10 +27,10 @@ function AppLayout() {
 }
 
 /**
- * The shell for the two top-level destinations (Explore + Profile): it mounts the
- * persistent bottom nav and pads its content so nothing hides behind the fixed
- * bar. The focused sub-screens (review / grammar / challenges) sit outside this
- * layout and keep their own back-link chrome with no bottom nav.
+ * The shell for the top-level destinations (Explore + Practice + Profile): it
+ * mounts the persistent bottom nav and pads its content so nothing hides behind
+ * the fixed bar. The focused sub-screens (review / grammar / challenges) sit
+ * outside this layout and keep their own back-link chrome with no bottom nav.
  */
 function ExploreLayout() {
   return (
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
         element: <ExploreLayout />,
         children: [
           { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
+          { path: '/practice', element: <GamesListPage /> },
           {
             path: '/profile',
             element: (

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router'
 import { unitLoader, unitsLoader } from './data/db'
 import { UnitsListPage } from './routes/UnitsListPage'
 import { ProfilePage } from './routes/ProfilePage'
+import { GamesListPage } from './routes/GamesListPage'
 import { CardReviewPage } from './routes/CardReviewPage'
 import { ChallengeRunPage } from './routes/ChallengeRunPage'
 import { GrammarPage } from './routes/GrammarPage'
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
         element: <ExploreLayout />,
         children: [
           { path: '/units', element: <UnitsListPage />, loader: unitsLoader },
+          { path: '/practice', element: <GamesListPage /> },
           {
             path: '/profile',
             element: (

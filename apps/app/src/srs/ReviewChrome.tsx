@@ -56,6 +56,9 @@ export function ReviewSummary({
           <span className="text-ink/30"> / </span>
           {summary.total}
         </p>
+        <p className="mt-1 font-display text-xs font-bold uppercase tracking-wide text-ink/50">
+          {summary.correct} correct · {summary.total - summary.correct} incorrect
+        </p>
         <p className="mt-3 font-content text-ink/70">{allCorrect ? 'Perfect! 🎉' : 'Nice work!'}</p>
       </Card>
       <div className="flex gap-3">

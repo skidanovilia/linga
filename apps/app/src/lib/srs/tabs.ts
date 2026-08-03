@@ -5,13 +5,17 @@
 // be reviewed at this moment. The predicates read the same `ShelfStatus` the
 // launch button reads, so a tab can never disagree with the card inside it.
 //
-// The three buckets are deliberately not a partition:
-//  - Now and Recently are mutually exclusive (`dueCount > 0` vs `dueCount === 0`).
-//  - New overlaps Recently for a unit whose vocabulary is entirely untouched —
-//    everything is new, so nothing is due. That unit really is both.
-//  - A unit with a due word *and* an uninitiated word is New only: finishing the
-//    introduction outranks the repeat.
-//  - A unit with no vocabulary at all falls out as Recently only.
+// The three buckets partition the units — a unit shown at all is shown in
+// exactly one tab:
+//  - New wins whenever a word has never been met. A unit with a due word *and*
+//    an uninitiated one is New only: finishing the introduction outranks the
+//    repeat.
+//  - Now is review work with nothing left to introduce.
+//  - Recently is the remainder — everything introduced, everything scheduled
+//    ahead. It is defined as "neither New nor Now" rather than as its own test,
+//    so the three can never overlap or leave a gap.
+//  - A unit with no vocabulary is in no tab: it has nothing to introduce and
+//    nothing to repeat, and calling it "recently reviewed" would be a lie.
 //
 // `null` means "not known yet": `useShelfStatus` returns null while a signed-in
 // user's progress loads. An unknown shelf belongs to no tab, so cards never flash
@@ -40,21 +44,24 @@ export function isNowUnit(shelf: ShelfStatus | null): boolean {
 }
 
 /**
- * Recently — nothing is available to review right now. Purely the negation of
- * "something is due": whether the unit also has new words, or a `nextDueAt`
- * scheduled ahead, is irrelevant, which is why an untouched unit lands here as
- * well as in New.
+ * Recently — reviewed and settled: every word has been introduced and every one
+ * is scheduled ahead. Exactly "neither New nor Now", so an untouched unit reads
+ * as New alone rather than as both. A unit with no vocabulary was never
+ * reviewed and belongs to no tab at all, which is what `total` guards.
  */
 export function isRecentlyUnit(shelf: ShelfStatus | null): boolean {
-  return shelf != null && shelf.dueCount === 0
+  return (
+    shelf != null && shelf.total > 0 && shelf.newCount === 0 && shelf.dueCount === 0
+  )
 }
 
 /**
- * The one question the page asks. Signed out there is no memory state at all: no
- * `vocab_progress` rows exist, so every unit is New. That is asserted here rather
- * than synthesised as a shelf — an "everything is new" shelf has `dueCount === 0`
- * and would therefore also mirror the entire unit list into Recently, burying the
- * sign-in prompt those tabs are supposed to show.
+ * The one question the page asks. Signed out there is no memory state at all —
+ * no `vocab_progress` rows exist — so every unit is New, asserted here rather
+ * than derived from a shelf nobody loaded. One consequence: a unit with no
+ * vocabulary still shows under New to a signed-out visitor, where a signed-in
+ * one sees it in no tab. Keeping it out would need `total`, and signed out
+ * there is no shelf to read it from.
  */
 export function unitInTab(
   tab: UnitTab,

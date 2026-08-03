@@ -26,9 +26,10 @@ const TABS: { key: UnitTab; label: string }[] = [
  * or completion badges:
  *  - New       — at least one word has never been introduced.
  *  - Now       — a word is due and none are left to introduce.
- *  - Recently  — nothing in the unit is available to review at this moment.
- * Now and Recently are mutually exclusive; New overlaps Recently for a unit whose
- * vocabulary is entirely untouched. `runs` still feeds the card, just not the tabs.
+ *  - Recently  — everything introduced and everything scheduled ahead.
+ * The three partition the list: a unit shown at all is shown in exactly one tab
+ * (a unit with no vocabulary is shown in none). `runs` still feeds the card, just
+ * not the tabs.
  */
 export function UnitsListPage() {
   const units = useLoaderData() as Unit[]
@@ -38,7 +39,7 @@ export function UnitsListPage() {
   const [tab, setTab] = useState<UnitTab>('new')
 
   // Accent keyed on the unit's position in the full list, so a unit keeps the
-  // same color whichever tab it appears in.
+  // same color as it moves between tabs.
   const cards = units.map((unit, i) => ({ unit, accent: ACCENTS[i % ACCENTS.length] }))
 
   // `shelves` is null both when signed out and while a signed-in user's progress
@@ -119,9 +120,9 @@ function EmptyTab({
       ? 'Nothing to review right now. Check back later.'
       : 'Sign in to see what’s ready to review.',
     recently: signedIn
-      ? // Recently is empty only when every unit has a review due; each of those
-        // sits in New if it still has words to introduce, in Now otherwise.
-        'Every unit has a review waiting — see New and Now.'
+      ? // Recently is the leftover bucket, so it is empty only when every unit
+        // still owes something: words to introduce (New) or a review due (Now).
+        'Every unit still has work waiting — see New and Now.'
       : 'Sign in to track your progress.',
   }
   return (

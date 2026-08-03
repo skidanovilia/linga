@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createLeitnerStrategy } from './leitner'
-import { summarizeShelf } from './shelf'
+import { summarizeShelf, type ShelfStatus } from './shelf'
 import { isNewUnit, isNowUnit, isRecentlyUnit, unitInTab } from './tabs'
 import type { ProgressState, ReviewItem } from './types'
 
@@ -100,30 +100,79 @@ describe('isNowUnit', () => {
 
 describe('isRecentlyUnit', () => {
   // Recently AC1
-  it('is Recently when nothing is available to review now', () => {
+  it('is Recently only when nothing is new and nothing is due', () => {
     expect(isRecentlyUnit(shelfOf([seen('ahead', DAY)]))).toBe(true)
-    expect(isRecentlyUnit(shelfOf([]))).toBe(true) // a unit with no vocabulary at all
-    expect(isRecentlyUnit(shelfOf([seen('due', -MIN)]))).toBe(false)
+    expect(isRecentlyUnit(shelfOf([seen('ahead', DAY), seen('later', 3 * DAY)]))).toBe(true)
+    expect(isRecentlyUnit(shelfOf([seen('due', -MIN)]))).toBe(false) // due → Now
+    expect(isRecentlyUnit(shelfOf([item('fresh')]))).toBe(false) // new → New
   })
 
-  // Recently AC2
-  it('never overlaps Now', () => {
+  // Recently AC2 — an untouched unit is New alone, not New *and* Recently.
+  it('keeps a never-introduced word out of Recently', () => {
+    const shelf = shelfOf([item('fresh')])
+    expect(isNewUnit(shelf)).toBe(true)
+    expect(isRecentlyUnit(shelf)).toBe(false)
+  })
+
+  // Recently AC4
+  it('needs every word to have progress and be scheduled ahead', () => {
+    const settled = [seen('a', DAY), seen('b', 3 * DAY)]
+    expect(isRecentlyUnit(shelfOf(settled))).toBe(true)
+
+    // One never-reviewed word is enough to disqualify it...
+    expect(isRecentlyUnit(shelfOf([...settled, item('fresh')]))).toBe(false)
+    // ...as is one word whose moment has arrived.
+    expect(isRecentlyUnit(shelfOf([...settled, seen('due', -MIN)]))).toBe(false)
+  })
+
+  it('is no tab at all for a unit with no vocabulary', () => {
+    const none = shelfOf([])
+    expect(isRecentlyUnit(none)).toBe(false)
+    expect(isNewUnit(none)).toBe(false)
+    expect(isNowUnit(none)).toBe(false)
+  })
+})
+
+/**
+ * The property the three predicates exist to satisfy. Asserted over the shelf
+ * shapes that can actually occur rather than case by case, so a future edit to
+ * any one predicate cannot quietly reopen an overlap or a gap.
+ */
+describe('the tabs partition the units', () => {
+  const inTabs = (shelf: ShelfStatus | null) =>
+    [isNewUnit, isNowUnit, isRecentlyUnit].filter((p) => p(shelf)).length
+
+  // Recently AC3
+  it('puts every unit with vocabulary in exactly one tab', () => {
     const shelves = [
-      shelfOf([seen('due', -MIN)]),
-      shelfOf([seen('ahead', DAY)]),
-      shelfOf([item('fresh')]),
-      shelfOf([seen('due', -MIN), item('fresh')]),
-      shelfOf([]),
+      shelfOf([item('fresh')]), // untouched → New
+      shelfOf([item('f1'), item('f2')]), // untouched → New
+      shelfOf([seen('due', -MIN), item('fresh')]), // due + new → New
+      shelfOf([seen('due', -MIN)]), // due → Now
+      shelfOf([seen('due', -DAY), seen('ahead', DAY)]), // due + ahead → Now
+      shelfOf([seen('ahead', DAY)]), // all ahead → Recently
+      shelfOf([seen('ahead', DAY), seen('later', 3 * DAY)]), // all ahead → Recently
     ]
     for (const shelf of shelves) {
-      expect(isNowUnit(shelf) && isRecentlyUnit(shelf)).toBe(false)
+      expect(inTabs(shelf)).toBe(1)
     }
   })
 
-  // Recently AC3
-  it('lets a never-introduced word sit in Recently as well as New', () => {
-    const shelf = shelfOf([item('fresh')])
-    expect(isRecentlyUnit(shelf)).toBe(true)
-    expect(isNewUnit(shelf)).toBe(true)
+  it('puts a unit with no vocabulary, and an unknown shelf, in none', () => {
+    expect(inTabs(shelfOf([]))).toBe(0)
+    expect(inTabs(null)).toBe(0)
+  })
+})
+
+describe('unitInTab routing', () => {
+  const routes = (shelf: ShelfStatus | null) =>
+    (['new', 'now', 'recently'] as const).filter((tab) => unitInTab(tab, shelf, true))
+
+  it('routes each shelf shape to its one tab for a signed-in user', () => {
+    expect(routes(shelfOf([item('fresh')]))).toEqual(['new'])
+    expect(routes(shelfOf([seen('due', -MIN), item('fresh')]))).toEqual(['new'])
+    expect(routes(shelfOf([seen('due', -MIN)]))).toEqual(['now'])
+    expect(routes(shelfOf([seen('ahead', DAY)]))).toEqual(['recently'])
+    expect(routes(shelfOf([]))).toEqual([])
   })
 })

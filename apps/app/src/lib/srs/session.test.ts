@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SRS } from '../../config'
 import { createLeitnerStrategy } from './leitner'
 import { createReviewSession } from './session'
 import { toReviewItems, type ProgressStore } from './store'
@@ -79,6 +80,44 @@ describe('createReviewSession', () => {
     session.next()
     expect(session.isComplete()).toBe(true)
     expect(session.summary()).toMatchObject({ answered: 2, correct: 2, total: 2 })
+  })
+
+  it('runs a whole new unit in one session, reviewing it like any other', async () => {
+    const store = new FakeStore()
+    const ids = Array.from({ length: 8 }, (_, i) => `w${i}`)
+    const session = createReviewSession(freshItems(ids), store, strategy, {
+      now,
+      requeueGap: SRS.requeueGap,
+    })
+
+    // The entire unit is introduced at once — no trickle, no session cap.
+    expect(session.summary().total).toBe(8)
+    expect(session.counts.fresh).toBe(8)
+
+    // A first correct answer schedules a real future review, not a repeat.
+    await session.answer(true)
+    expect(store.rows.get('w0')).toMatchObject({ box: 1, reps: 1, lastResult: 'correct' })
+    expect(store.rows.get('w0')?.dueAt).toEqual(new Date(NOW.getTime() + SRS.boxIntervals[0]))
+    session.next()
+
+    // A wrong answer re-arms the item soon...
+    expect(session.current()?.id).toBe('w1')
+    await session.answer(false)
+    expect(store.rows.get('w1')).toMatchObject({ box: 1, lapses: 1, lastResult: 'wrong' })
+    expect(store.rows.get('w1')?.dueAt).toEqual(
+      new Date(NOW.getTime() + SRS.wrongShortInterval),
+    )
+
+    // ...and returns it later in this same session, which grows by one slot.
+    expect(session.summary().total).toBe(9)
+    session.next()
+    const rest: string[] = []
+    while (!session.isComplete()) {
+      rest.push(session.current()!.id)
+      session.next()
+    }
+    expect(rest).toContain('w1')
+    expect(rest[0]).not.toBe('w1') // requeued a few steps on, not immediately
   })
 
   it('after a perfect pass, relaunching does not re-serve the same items', async () => {

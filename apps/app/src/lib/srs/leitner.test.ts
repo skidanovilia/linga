@@ -10,8 +10,6 @@ const CONFIG: LeitnerConfig = {
   boxIntervals: [10 * MIN, 1 * DAY, 3 * DAY, 7 * DAY, 16 * DAY],
   maxBox: 5,
   wrongShortInterval: 1 * MIN,
-  sessionSize: 20,
-  newPerSession: 5,
   failureCap: 5,
 }
 
@@ -95,12 +93,24 @@ describe('buildSession', () => {
     expect(plan.counts).toMatchObject({ failures: 2, overdue: 1 })
   })
 
-  it('strictly caps new items at newPerSession', () => {
-    const items = Array.from({ length: 10 }, (_, i) => item(`new${i}`))
+  it('introduces every new item of an untouched unit in one session', () => {
+    // 30 is deliberately larger than any cap the engine used to apply.
+    const items = Array.from({ length: 30 }, (_, i) => item(`new${i}`))
     const plan = strategy.buildSession(items, { now: NOW })
-    expect(plan.queue).toHaveLength(CONFIG.newPerSession)
-    expect(plan.counts.fresh).toBe(CONFIG.newPerSession)
+    expect(plan.queue).toHaveLength(30)
+    expect(plan.queue).toEqual(items.map((i) => i.id)) // content order preserved
+    expect(plan.counts.fresh).toBe(30)
     expect(plan.nextDueAt).toBeNull()
+  })
+
+  it('queues all new items alongside due work, however many there are', () => {
+    const items = [
+      item('due', st({ dueAt: at(-MIN), lastResult: 'correct' })),
+      ...Array.from({ length: 25 }, (_, i) => item(`new${i}`)),
+    ]
+    const plan = strategy.buildSession(items, { now: NOW })
+    expect(plan.queue).toHaveLength(26)
+    expect(plan.counts).toMatchObject({ overdue: 1, fresh: 25 })
   })
 
   it('orders most-overdue first', () => {
@@ -112,20 +122,16 @@ describe('buildSession', () => {
     expect(plan.queue).toEqual(['severe', 'mild'])
   })
 
-  it('only pulls future items forward when still short, and reports nextDueAt', () => {
-    const cfg = { ...CONFIG, sessionSize: 3 }
-    const s = createLeitnerStrategy(cfg)
+  it('never pulls future items forward, and reports the nearest as nextDueAt', () => {
     const items = [
       item('due1', st({ dueAt: at(-MIN), lastResult: 'correct' })),
       item('f1', st({ box: 2, dueAt: at(DAY), lastResult: 'correct' })),
       item('f2', st({ box: 2, dueAt: at(2 * DAY), lastResult: 'correct' })),
       item('f3', st({ box: 2, dueAt: at(3 * DAY), lastResult: 'correct' })),
     ]
-    const plan = s.buildSession(items, { now: NOW })
-    expect(plan.queue).toHaveLength(3) // 1 due + 2 nearest future
-    expect(plan.queue).toEqual(['due1', 'f1', 'f2'])
-    expect(plan.counts.future).toBe(2)
-    expect(plan.nextDueAt).toEqual(at(3 * DAY)) // f3, left out of the queue
+    const plan = strategy.buildSession(items, { now: NOW })
+    expect(plan.queue).toEqual(['due1']) // a thin session stays thin
+    expect(plan.nextDueAt).toEqual(at(DAY)) // f1, the nearest one left out
   })
 
   it('returns an empty queue with a nextDueAt when nothing is due or new', () => {
@@ -138,9 +144,7 @@ describe('buildSession', () => {
     expect(plan.nextDueAt).toEqual(at(DAY))
   })
 
-  it('interleaves the new trickle into reviews rather than trailing them', () => {
-    const cfg = { ...CONFIG, newPerSession: 2 }
-    const s = createLeitnerStrategy(cfg)
+  it('interleaves new items into reviews rather than trailing them', () => {
     const items = [
       item('r1', st({ dueAt: at(-4 * MIN), lastResult: 'correct' })),
       item('r2', st({ dueAt: at(-3 * MIN), lastResult: 'correct' })),
@@ -149,7 +153,7 @@ describe('buildSession', () => {
       item('n1'),
       item('n2'),
     ]
-    const plan = s.buildSession(items, { now: NOW })
+    const plan = strategy.buildSession(items, { now: NOW })
     // New cards are not both at the very end.
     const tail = plan.queue.slice(-2)
     expect(tail).not.toEqual(['n1', 'n2'])
@@ -172,6 +176,21 @@ describe('summarizeShelf', () => {
     )
     expect(idle).toMatchObject({ dueCount: 0, newCount: 0, enabled: false })
     expect(idle.nextDueAt).toEqual(at(DAY))
+  })
+
+  it('reports a unit with no vocabulary as empty and disabled', () => {
+    const none = summarizeShelf([], strategy, NOW)
+    expect(none).toMatchObject({ total: 0, dueCount: 0, newCount: 0, enabled: false })
+    expect(none.nextDueAt).toBeNull()
+  })
+
+  it('counts every item in total, however it is scheduled', () => {
+    const items = [
+      item('new'),
+      item('due', st({ dueAt: at(-MIN), lastResult: 'correct' })),
+      item('later', st({ box: 2, dueAt: at(DAY), lastResult: 'correct' })),
+    ]
+    expect(summarizeShelf(items, strategy, NOW).total).toBe(3)
   })
 
   it('keeps a shelf enabled when nothing is due but new items remain', () => {

@@ -17,8 +17,6 @@ export interface LeitnerConfig {
   boxIntervals: readonly number[]
   maxBox: number
   wrongShortInterval: number
-  sessionSize: number
-  newPerSession: number
   failureCap: number
 }
 
@@ -91,41 +89,26 @@ export function createLeitnerStrategy(config: LeitnerConfig = SRS): ReviewStrate
       .filter((i) => !failureIds.has(i.id))
       .sort((a, b) => ms(a.state!.dueAt) - ms(b.state!.dueAt))
 
-    // Fill to the session cap, bucket by bucket.
-    let room = config.sessionSize
-    const pickedFailures = take(failures, room)
-    room -= pickedFailures.length
-    const pickedOverdue = take(overdue, room)
-    room -= pickedOverdue.length
-    // 3. New items: the strict trickle — the primary pile-up guard.
-    const pickedFresh = take(fresh, Math.min(config.newPerSession, room))
-    room -= pickedFresh.length
-    // 4. Top up a thin session with the nearest-future items — but only once
-    //    there is real due work AND nothing new is left to learn. This keeps two
-    //    promises: a shelf with nothing due/new stays empty ("all reviewed", not
-    //    a refill), and a just-finished perfect pass is never re-served while new
-    //    content still exists.
-    const hasDueWork = pickedFailures.length + pickedOverdue.length > 0
-    const canTopUp = hasDueWork && fresh.length === 0
-    const pickedFuture = canTopUp ? take(future, room) : []
+    // 3. Every new item — no trickle, no session cap. A unit's session is its
+    //    whole outstanding workload, so a brand-new unit introduces all of its
+    //    vocabulary at once instead of rationing it five words per launch.
+    //
+    // Failures stay up front; the rest of the due work is interleaved with the
+    // new items so concepts vary and new cards don't clump at the tail.
+    const queue = [...failures, ...interleave(overdue, fresh)].map((i) => i.id)
 
-    // Failures stay up front; interleave the remaining reviews with the new
-    // trickle so concepts vary and new cards don't clump at the tail.
-    const reviewsTail = [...pickedOverdue, ...pickedFuture]
-    const body = interleave(reviewsTail, pickedFresh)
-    const queue = [...pickedFailures, ...body].map((i) => i.id)
-
-    const queued = new Set(queue)
-    const waiting = future.find((i) => !queued.has(i.id))
-    const nextDueAt = waiting ? waiting.state!.dueAt : null
+    // Nothing is ever pulled forward — an item that is not due stays out of the
+    // session — so the nearest future item is exactly what's waiting. This is
+    // what keeps a finished shelf empty ("all reviewed") rather than refilling
+    // it with cards answered correctly minutes ago.
+    const nextDueAt = future[0]?.state?.dueAt ?? null
 
     return {
       queue,
       counts: {
-        failures: pickedFailures.length,
-        overdue: pickedOverdue.length,
-        fresh: pickedFresh.length,
-        future: pickedFuture.length,
+        failures: failures.length,
+        overdue: overdue.length,
+        fresh: fresh.length,
       },
       nextDueAt,
     }
@@ -140,8 +123,6 @@ export const leitnerStrategy = createLeitnerStrategy()
 // --- helpers ---------------------------------------------------------------
 
 const lastSeen = (item: ReviewItem): number => item.state?.lastSeenAt?.getTime() ?? 0
-
-const take = <T>(xs: T[], n: number): T[] => (n <= 0 ? [] : xs.slice(0, n))
 
 /**
  * Merge `secondary` items evenly into `primary`, preserving each list's order.

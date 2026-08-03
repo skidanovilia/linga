@@ -18,18 +18,36 @@ export function ReviewHeader({ unitTitle, label }: { unitTitle: string; label: s
 }
 
 /**
- * The explicit "nothing due" state — not an error, not a refill. Shown when a
- * shelf has nothing due and no new items to introduce.
+ * The explicit "nothing to do" state — not an error, not a refill. Covers two
+ * distinct cases that must not be confused: a shelf with nothing due and nothing
+ * new left to introduce, and a unit that has no vocabulary in the first place.
+ * Congratulating someone for clearing a shelf they never had reads as a bug.
  */
-export function ReviewEmptyState({ nextDueAt }: { nextDueAt: Date | null }) {
+export function ReviewEmptyState({
+  nextDueAt,
+  hasVocab,
+}: {
+  nextDueAt: Date | null
+  hasVocab: boolean
+}) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
       <Card decoration="blue" className="px-10 py-8">
-        <p className="font-display text-sm font-bold uppercase tracking-widest text-ink/60">All reviewed</p>
-        <p className="mt-3 font-content text-lg font-bold">Nothing due right now 🎉</p>
-        <p className="mt-1 font-content text-ink/70">
-          {nextDueAt ? `Next review ${formatDue(nextDueAt)}.` : 'No reviews scheduled.'}
-        </p>
+        {hasVocab ? (
+          <>
+            <p className="font-display text-sm font-bold uppercase tracking-widest text-ink/60">All reviewed</p>
+            <p className="mt-3 font-content text-lg font-bold">Nothing due right now 🎉</p>
+            <p className="mt-1 font-content text-ink/70">
+              {nextDueAt ? `Next review ${formatDue(nextDueAt)}.` : 'No reviews scheduled.'}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-display text-sm font-bold uppercase tracking-widest text-ink/60">No cards yet</p>
+            <p className="mt-3 font-content text-lg font-bold">This unit has no vocabulary yet.</p>
+            <p className="mt-1 font-content text-ink/70">Check back once words have been added.</p>
+          </>
+        )}
       </Card>
       <ButtonLink to="/units" variant="outline">
         Back to units

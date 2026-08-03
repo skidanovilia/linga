@@ -32,7 +32,7 @@ export function CardReviewPage() {
         ) : review.phase === 'loading' ? (
           <Loading />
         ) : review.phase === 'empty' ? (
-          <ReviewEmptyState nextDueAt={review.nextDueAt} />
+          <ReviewEmptyState nextDueAt={review.nextDueAt} hasVocab={unit.vocab.length > 0} />
         ) : review.phase === 'done' && review.summary ? (
           <ReviewSummary summary={review.summary} onRestart={review.restart} />
         ) : review.item ? (

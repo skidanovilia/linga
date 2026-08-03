@@ -34,7 +34,6 @@ export interface SessionCounts {
   failures: number
   overdue: number
   fresh: number
-  future: number
 }
 
 export interface SessionPlan {
@@ -46,8 +45,9 @@ export interface SessionPlan {
   queue: string[]
   counts: SessionCounts
   /**
-   * Earliest future due time among items left out of the queue, or `null` if
-   * nothing is waiting. Drives the "all reviewed — next due at T" state.
+   * Earliest due time among the not-yet-due items — all of which are left out
+   * of the queue — or `null` if nothing is waiting. Drives the "all reviewed —
+   * next due at T" state.
    */
   nextDueAt: Date | null
 }
@@ -67,6 +67,9 @@ export interface ReviewStrategy {
   isDue(state: ProgressState | null, now: Date): boolean
   /** Pure state transition for one answer. Accepts `null` (a new item). */
   grade(state: ProgressState | null, correct: boolean, now: Date): ProgressState
-  /** Pick and order one launch's items (failures → overdue → new → future). */
+  /**
+   * Pick and order one launch's items: failures → overdue → new, uncapped.
+   * Items that are not yet due are never included.
+   */
   buildSession(items: ReviewItem[], opts: BuildSessionOptions): SessionPlan
 }

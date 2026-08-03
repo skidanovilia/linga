@@ -80,9 +80,10 @@ export function UnitCard({
 /**
  * The memo-cards launch button, its enabled/disabled state derived entirely from
  * the SRS engine's shelf summary. `undefined` status = still loading. A disabled
- * button shows the "all reviewed — next due at T" state and is non-interactive;
- * its dashed border + lock icon + flattened shadow carry the disabled state
- * without relying on color alone. Cards are never gated by challenge state.
+ * button is non-interactive and shows either the "all reviewed — next due at T"
+ * state or, for a unit that has no vocabulary at all, "no cards yet"; its dashed
+ * border + lock icon + flattened shadow carry the disabled state without relying
+ * on color alone. Cards are never gated by challenge state.
  */
 function ShelfButton({
   to,
@@ -102,6 +103,12 @@ function ShelfButton({
   }
 
   if (!status.enabled) {
+    // A unit with no vocabulary is not a finished one — don't claim a shelf
+    // that never existed has been reviewed.
+    const hint =
+      status.total === 0
+        ? 'No cards yet'
+        : `All reviewed · next ${formatDue(status.nextDueAt)}`
     return (
       <button
         type="button"
@@ -113,7 +120,7 @@ function ShelfButton({
           {label}
         </span>
         <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal">
-          All reviewed · next {formatDue(status.nextDueAt)}
+          {hint}
         </span>
       </button>
     )

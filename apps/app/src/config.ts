@@ -10,16 +10,18 @@ const DAY = 24 * 60 * MINUTE
  * one edit retunes the whole engine. The Leitner strategy and both shelves
  * (cards, challenges) read from here; nothing about timing is hard-coded
  * elsewhere.
+ *
+ * Note what is deliberately absent: there is no session-size cap and no
+ * new-items-per-session trickle. A session is exactly the unit's outstanding
+ * work — every due item plus every word never introduced — so a new unit
+ * teaches its whole vocabulary in one sitting.
  */
 export const SRS = {
-  /** Hard cap on items queued per launch (failures + overdue + new + future). */
-  sessionSize: 20,
   /**
-   * The primary guard against review pile-up: at most this many brand-new items
-   * (no progress row yet) are introduced per launch.
+   * How many recent failures lead a session. Not a drop: failures past this
+   * point fall through into the overdue bucket and are still queued — the cap
+   * only decides how many of them come first.
    */
-  newPerSession: 5,
-  /** Cap on the recent-failure slice that leads a session. */
   failureCap: 5,
   /**
    * The widening interval ladder, indexed by `box - 1` (box is 1-based, capped

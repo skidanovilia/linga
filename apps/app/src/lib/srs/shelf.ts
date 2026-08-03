@@ -5,6 +5,11 @@
 import type { ReviewItem, ReviewStrategy } from './types'
 
 export interface ShelfStatus {
+  /**
+   * Items on the shelf at all. `0` means the unit has no vocabulary — a
+   * different state from "you have reviewed everything", and the UI says so.
+   */
+  total: number
   /** Items due now (box ≥ 1, due_at ≤ now). */
   dueCount: number
   /** Items never introduced (no progress row) — available to start as new. */
@@ -40,5 +45,11 @@ export function summarizeShelf(
     }
   }
 
-  return { dueCount, newCount, nextDueAt, enabled: dueCount > 0 || newCount > 0 }
+  return {
+    total: items.length,
+    dueCount,
+    newCount,
+    nextDueAt,
+    enabled: dueCount > 0 || newCount > 0,
+  }
 }

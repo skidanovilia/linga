@@ -7,45 +7,46 @@ import { useChallengeRuns } from '../challenges/run/useChallengeRuns'
 import { PageShell } from '../components/PageShell'
 import { ButtonLink } from '../components/Button'
 import { UnitCard, type CardAccent } from './UnitCard'
+import { unitInTab, type UnitTab } from '../lib/srs/tabs'
 
 // Rotate the three primaries across the unit cards for the constructivist rhythm.
 const ACCENTS: CardAccent[] = ['red', 'blue', 'yellow']
 
-type TabKey = 'new' | 'today' | 'recently'
-
-const TABS: { key: TabKey; label: string }[] = [
+const TABS: { key: UnitTab; label: string }[] = [
   { key: 'new', label: 'New' },
-  { key: 'today', label: 'Today' },
+  { key: 'now', label: 'Now' },
   { key: 'recently', label: 'Recently' },
 ]
 
 /**
- * Explore: the same unit cards regrouped into three non-exclusive slices of the
- * one unit list, each a horizontal scroll row. The tabs differ only by which
- * units are visible — the card itself is unchanged (see `UnitCard`):
- *  - New       — units with no permanent `unit_completion` badge.
- *  - Today     — units with something to review now: due or brand-new vocab
- *                (exactly the shelf's `enabled` predicate).
- *  - Recently  — units with vocab progress but nothing due/new now (all due > now).
+ * Explore: the same unit cards regrouped into three slices of the one unit list,
+ * each a horizontal scroll row. The tabs differ only by which units are visible —
+ * the card itself is unchanged (see `UnitCard`). Membership is decided solely by
+ * the unit's vocabulary memory state (see `lib/srs/tabs`), never by challenge runs
+ * or completion badges:
+ *  - New       — at least one word has never been introduced.
+ *  - Now       — a word is due and none are left to introduce.
+ *  - Recently  — nothing in the unit is available to review at this moment.
+ * Now and Recently are mutually exclusive; New overlaps Recently for a unit whose
+ * vocabulary is entirely untouched. `runs` still feeds the card, just not the tabs.
  */
 export function UnitsListPage() {
   const units = useLoaderData() as Unit[]
   const { user } = useAuth()
   const shelves = useShelfStatus(units)
   const runs = useChallengeRuns()
-  const [tab, setTab] = useState<TabKey>('new')
+  const [tab, setTab] = useState<UnitTab>('new')
 
   // Accent keyed on the unit's position in the full list, so a unit keeps the
   // same color whichever tab it appears in.
   const cards = units.map((unit, i) => ({ unit, accent: ACCENTS[i % ACCENTS.length] }))
 
-  const inTab = (unit: Unit): boolean => {
-    const shelf = shelves?.get(unit.id)
-    if (tab === 'new') return !runs.hasUnitCompletion(unit)
-    if (tab === 'today') return shelf?.enabled === true
-    // recently: has vocab progress scheduled ahead, but nothing due/new right now.
-    return shelf != null && !shelf.enabled && shelf.nextDueAt != null
-  }
+  // `shelves` is null both when signed out and while a signed-in user's progress
+  // loads, so `user` is what separates "no rows exist" from "not read yet".
+  const loading = !!user && shelves === null
+
+  const inTab = (unit: Unit): boolean =>
+    unitInTab(tab, shelves?.get(unit.id) ?? null, !!user)
 
   const visible = cards.filter(({ unit }) => inTab(unit))
 
@@ -93,28 +94,40 @@ export function UnitsListPage() {
           ))}
         </ul>
       ) : (
-        <EmptyTab tab={tab} signedIn={!!user} />
+        <EmptyTab tab={tab} signedIn={!!user} loading={loading} />
       )}
     </PageShell>
   )
 }
 
-/** Per-tab empty state, in the existing muted text style. Signed-out users can
- *  only populate Today/Recently by signing in, so those offer a prompt. */
-function EmptyTab({ tab, signedIn }: { tab: TabKey; signedIn: boolean }) {
-  const copy: Record<TabKey, string> = {
-    new: "You've completed every unit — nice work.",
-    today: signedIn
+/** Per-tab empty state, in the existing muted text style. Signed-out visitors can
+ *  only populate Now/Recently by signing in, so those offer a prompt. While a
+ *  signed-in user's progress loads, no unit belongs to any tab yet — that is not
+ *  the same as "nothing here", so say so instead of claiming an empty shelf. */
+function EmptyTab({
+  tab,
+  signedIn,
+  loading,
+}: {
+  tab: UnitTab
+  signedIn: boolean
+  loading: boolean
+}) {
+  const copy: Record<UnitTab, string> = {
+    new: 'Nothing new left — every word in every unit has been introduced.',
+    now: signedIn
       ? 'Nothing to review right now. Check back later.'
-      : 'Sign in to see what’s due today.',
+      : 'Sign in to see what’s ready to review.',
     recently: signedIn
-      ? 'No lessons in progress yet. Start a new one.'
+      ? // Recently is empty only when every unit has a review due; each of those
+        // sits in New if it still has words to introduce, in Now otherwise.
+        'Every unit has a review waiting — see New and Now.'
       : 'Sign in to track your progress.',
   }
   return (
     <div className="flex flex-col items-start gap-4 py-8">
-      <p className="font-content text-ink/60">{copy[tab]}</p>
-      {!signedIn && tab !== 'new' && (
+      <p className="font-content text-ink/60">{loading ? 'Loading your progress…' : copy[tab]}</p>
+      {!loading && !signedIn && tab !== 'new' && (
         <ButtonLink to="/login" variant="blue" className="text-sm">
           Sign in
         </ButtonLink>

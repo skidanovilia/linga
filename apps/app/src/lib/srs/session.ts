@@ -32,6 +32,13 @@ export interface ReviewSession<T> {
   next(): void
   isComplete(): boolean
   summary(): ReviewSessionSummary
+  /**
+   * Every item carrying the state this session has arrived at — answers applied,
+   * untouched items unchanged. This is what "is anything due now that this is
+   * over?" must be asked of, and what a repeat run is rebuilt from: the plan's
+   * `nextDueAt` was fixed before a single answer landed.
+   */
+  itemsNow(): ReviewItem<T>[]
   /** Earliest future due time of items left out of this session, or `null`. */
   nextDueAt: Date | null
   counts: SessionCounts
@@ -96,6 +103,9 @@ export function createReviewSession<T>(
 
   const isComplete = (): boolean => position >= queue.length
 
+  const itemsNow = (): ReviewItem<T>[] =>
+    items.map((i) => ({ ...i, state: local.get(i.id) ?? null }))
+
   return {
     current,
     peek,
@@ -103,6 +113,7 @@ export function createReviewSession<T>(
     answer,
     next,
     isComplete,
+    itemsNow,
     summary: () => ({ answered, correct: correctCount, total: queue.length }),
     nextDueAt: plan.nextDueAt,
     counts: plan.counts,

@@ -56,13 +56,26 @@ export function ReviewEmptyState({
   )
 }
 
-/** End-of-session summary. */
+/**
+ * End-of-session summary. The score always shows; the repeat entry is offered
+ * only when `canRepeat` — for a scheduled shelf that means something is due
+ * *now*, so finishing a run never invites a re-run of the cards just cleared.
+ * When it is withheld, the card says when the next review actually lands.
+ *
+ * Both props default to the unconditional behaviour for free practice, which has
+ * no boxes, no due dates and nothing persisted: there is no schedule to consult,
+ * so shuffling again is always a legitimate thing to offer.
+ */
 export function ReviewSummary({
   summary,
   onRestart,
+  canRepeat = true,
+  nextDueAt = null,
 }: {
   summary: ReviewSessionSummary
   onRestart: () => void
+  canRepeat?: boolean
+  nextDueAt?: Date | null
 }) {
   const allCorrect = summary.total > 0 && summary.correct === summary.total
   return (
@@ -78,11 +91,18 @@ export function ReviewSummary({
           {summary.correct} correct · {summary.total - summary.correct} incorrect
         </p>
         <p className="mt-3 font-content text-ink/70">{allCorrect ? 'Perfect! 🎉' : 'Nice work!'}</p>
+        {!canRepeat && (
+          <p className="mt-3 font-content text-sm text-ink/60">
+            All reviewed — next review {formatDue(nextDueAt)}.
+          </p>
+        )}
       </Card>
       <div className="flex gap-3">
-        <Button variant="blue" onClick={onRestart}>
-          Review again
-        </Button>
+        {canRepeat && (
+          <Button variant="blue" onClick={onRestart}>
+            Review again
+          </Button>
+        )}
         <ButtonLink to="/units" variant="outline">
           Back to units
         </ButtonLink>

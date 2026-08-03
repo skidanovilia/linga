@@ -7,7 +7,8 @@ import {
   type ReviewSession,
   type ReviewSessionSummary,
 } from '../lib/srs/session'
-import { toReviewItems } from '../lib/srs/store'
+import { summarizeShelf, type ShelfStatus } from '../lib/srs/shelf'
+import { toReviewItems, type ProgressStore } from '../lib/srs/store'
 import type { ReviewItem } from '../lib/srs/types'
 import { useAuth } from '../auth/useAuth'
 import type { ReviewAdapter } from './adapters'
@@ -27,12 +28,19 @@ export interface ReviewSessionState<T> {
   total: number
   nextDueAt: Date | null
   summary: ReviewSessionSummary | null
+  /**
+   * The shelf as it stands *after* this session's answers, evaluated once the
+   * moment it completes — `null` until then. Distinct from `nextDueAt`, which
+   * the plan fixed before any answer landed. Whether a repeat run has anything
+   * to offer is `dueCount > 0` here.
+   */
+  outcome: ShelfStatus | null
   error: string | null
   /** Grade the current item (persists + maybe requeues). */
   answer: (correct: boolean) => void
   /** Advance to the next item; flips to `done` at the end. */
   advance: () => void
-  /** Rebuild the session from freshly-loaded progress (e.g. "review again"). */
+  /** Re-run against whatever is due right now (e.g. "review again"). */
   restart: () => void
 }
 
@@ -48,10 +56,12 @@ export function useReviewSession<T>(
 ): ReviewSessionState<T> {
   const { user } = useAuth()
   const sessionRef = useRef<ReviewSession<T> | null>(null)
+  // Kept so a repeat run can rebuild without re-fetching (see `restart`).
+  const storeRef = useRef<ProgressStore | null>(null)
   const [phase, setPhase] = useState<ReviewPhase>('loading')
+  const [outcome, setOutcome] = useState<ShelfStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [, tick] = useReducer((n: number) => n + 1, 0)
-  const [epoch, restart] = useReducer((n: number) => n + 1, 0)
 
   const userId = user?.id
 
@@ -59,11 +69,13 @@ export function useReviewSession<T>(
     if (!userId) return
     let active = true
     setPhase('loading')
+    setOutcome(null)
     setError(null)
     sessionRef.current = null
 
     const items = adapter.loadItems(unit)
     const store = adapter.createStore(userId)
+    storeRef.current = store
     store
       .loadProgress(items.map((i) => i.id))
       .then((progress) => {
@@ -84,7 +96,7 @@ export function useReviewSession<T>(
     return () => {
       active = false
     }
-  }, [adapter, unit, userId, epoch])
+  }, [adapter, unit, userId])
 
   const answer = useCallback((correct: boolean) => {
     // Optimistic: local state is applied synchronously inside the controller;
@@ -96,7 +108,33 @@ export function useReviewSession<T>(
     const session = sessionRef.current
     if (!session) return
     session.next()
-    if (session.isComplete()) setPhase('done')
+    if (session.isComplete()) {
+      // Settle the shelf once, here — the same summary the unit card reads, so
+      // the two can never disagree about whether work remains.
+      setOutcome(summarizeShelf(session.itemsNow(), leitnerStrategy, new Date()))
+      setPhase('done')
+    }
+    tick()
+  }, [])
+
+  /**
+   * Re-run against what is due *now*: the queue is rebuilt from the state this
+   * session ended on, so cards just cleared (scheduled into the future) are
+   * excluded and only genuinely-due work returns. Rebuilding from memory rather
+   * than re-reading also sidesteps a race with the fire-and-forget upserts.
+   */
+  const restart = useCallback(() => {
+    const session = sessionRef.current
+    const store = storeRef.current
+    if (!session || !store) return
+
+    const next = createReviewSession(session.itemsNow(), store, leitnerStrategy, {
+      now: () => new Date(),
+      requeueGap: SRS.requeueGap,
+    })
+    sessionRef.current = next
+    setOutcome(null)
+    setPhase(next.isComplete() ? 'empty' : 'reviewing')
     tick()
   }, [])
 
@@ -112,6 +150,7 @@ export function useReviewSession<T>(
     total,
     nextDueAt: session?.nextDueAt ?? null,
     summary: phase === 'done' && session ? session.summary() : null,
+    outcome,
     error,
     answer,
     advance,

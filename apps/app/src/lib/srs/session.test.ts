@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { SRS } from '../../config'
 import { createLeitnerStrategy } from './leitner'
 import { createReviewSession } from './session'
+import { summarizeShelf } from './shelf'
 import { toReviewItems, type ProgressStore } from './store'
 import type { ProgressState, ReviewItem } from './types'
 
@@ -141,5 +142,108 @@ describe('createReviewSession', () => {
 
     expect(plan.queue).toHaveLength(0) // all promoted to box 1, due in the future
     expect(plan.nextDueAt).not.toBeNull()
+  })
+})
+
+/**
+ * What the finished-session screen asks: is there anything to come back to right
+ * now? Answered from the state the session ended on, never from the plan — the
+ * plan was fixed before a single answer landed.
+ */
+describe('post-session shelf', () => {
+  const MIN = 60 * 1000
+  const DAY = 24 * 60 * MIN
+  const at = (deltaMs: number) => new Date(NOW.getTime() + deltaMs)
+  const firstInterval = SRS.boxIntervals[0]
+
+  const runToCompletion = async (ids: string[]) => {
+    const store = new FakeStore()
+    const session = createReviewSession(freshItems(ids), store, strategy, {
+      now,
+      requeueGap: SRS.requeueGap,
+    })
+    while (!session.isComplete()) {
+      await session.answer(true)
+      session.next()
+    }
+    return { session, store }
+  }
+
+  it('itemsNow carries the answers and leaves untouched items alone', async () => {
+    const store = new FakeStore()
+    const items: ReviewItem<string>[] = [
+      { id: 'answered', content: 'answered', state: null },
+      {
+        id: 'untouched',
+        content: 'untouched',
+        state: {
+          box: 3,
+          dueAt: at(DAY),
+          reps: 2,
+          lapses: 0,
+          lastResult: 'correct',
+          lastSeenAt: NOW,
+        },
+      },
+    ]
+    const session = createReviewSession(items, store, strategy, {
+      now,
+      requeueGap: SRS.requeueGap,
+    })
+    await session.answer(true)
+
+    const after = new Map(session.itemsNow().map((i) => [i.id, i.state]))
+    expect(after.get('answered')).toMatchObject({ box: 1, reps: 1, lastResult: 'correct' })
+    expect(after.get('untouched')).toMatchObject({ box: 3, reps: 2 }) // never queued
+  })
+
+  it('leaves nothing due after a new unit is introduced, and reports the real next review', async () => {
+    const { session } = await runToCompletion(['a', 'b', 'c'])
+
+    const shelf = summarizeShelf(session.itemsNow(), strategy, NOW)
+    expect(shelf.dueCount).toBe(0) // → no "Review again"
+    expect(shelf.newCount).toBe(0) // every word was introduced
+    expect(shelf.nextDueAt).toEqual(at(firstInterval))
+
+    // The plan cannot answer this: it was built before any answer existed, and
+    // every item was queued, so it saw no future work at all.
+    expect(session.nextDueAt).toBeNull()
+  })
+
+  it('has due work once the scheduled moment has arrived', async () => {
+    const { session } = await runToCompletion(['a', 'b', 'c'])
+    const shelf = summarizeShelf(session.itemsNow(), strategy, at(firstInterval + MIN))
+    expect(shelf.dueCount).toBe(3) // → "Review again" is warranted
+  })
+
+  it('never counts a never-reviewed item as due, however long it waits', () => {
+    const store = new FakeStore()
+    const session = createReviewSession(freshItems(['a', 'b']), store, strategy, {
+      now,
+      requeueGap: SRS.requeueGap,
+    })
+    const shelf = summarizeShelf(session.itemsNow(), strategy, at(30 * DAY))
+    expect(shelf.newCount).toBe(2)
+    expect(shelf.dueCount).toBe(0)
+  })
+
+  it('a repeat run re-evaluates: empty right away, the due items once time passes', async () => {
+    const { session, store } = await runToCompletion(['a', 'b', 'c'])
+    const ended = session.itemsNow()
+
+    // Immediately: the cards just cleared are scheduled ahead, so nothing returns.
+    const immediate = createReviewSession(ended, store, strategy, {
+      now: () => NOW,
+      requeueGap: SRS.requeueGap,
+    })
+    expect(immediate.isComplete()).toBe(true)
+
+    // Later: the same rebuild serves exactly what has come due.
+    const laterAt = at(firstInterval + MIN)
+    const later = createReviewSession(ended, store, strategy, {
+      now: () => laterAt,
+      requeueGap: SRS.requeueGap,
+    })
+    expect(later.summary().total).toBe(3)
   })
 })

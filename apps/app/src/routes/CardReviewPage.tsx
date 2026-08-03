@@ -34,7 +34,14 @@ export function CardReviewPage() {
         ) : review.phase === 'empty' ? (
           <ReviewEmptyState nextDueAt={review.nextDueAt} hasVocab={unit.vocab.length > 0} />
         ) : review.phase === 'done' && review.summary ? (
-          <ReviewSummary summary={review.summary} onRestart={review.restart} />
+          <ReviewSummary
+            summary={review.summary}
+            onRestart={review.restart}
+            // Due work only. Deliberately not `outcome.enabled`, which also
+            // counts never-introduced items — those are not a review.
+            canRepeat={(review.outcome?.dueCount ?? 0) > 0}
+            nextDueAt={review.outcome?.nextDueAt ?? null}
+          />
         ) : review.item ? (
           <CardReviewDeck
             current={{

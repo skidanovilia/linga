@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SRS } from '../../config'
 import { createLeitnerStrategy } from './leitner'
-import { createReviewSession } from './session'
+import { createReviewSession, type ReviewSession } from './session'
 import { summarizeShelf } from './shelf'
 import { toReviewItems, type ProgressStore } from './store'
 import type { ProgressState, ReviewItem } from './types'
@@ -9,6 +9,10 @@ import type { ProgressState, ReviewItem } from './types'
 const strategy = createLeitnerStrategy()
 const NOW = new Date('2026-06-28T12:00:00.000Z')
 const now = () => NOW
+
+// Identity shuffle keeps the queue in plan order so placement is deterministic.
+// Every test below injects it except the one that exercises the real default.
+const identity = <U,>(items: readonly U[]): U[] => [...items]
 
 class FakeStore implements ProgressStore {
   rows = new Map<string, ProgressState>()
@@ -35,6 +39,7 @@ describe('createReviewSession', () => {
     const session = createReviewSession(freshItems(['a']), store, strategy, {
       now,
       requeueGap: 2,
+      shuffle: identity,
     })
     expect(session.current()?.id).toBe('a')
 
@@ -49,6 +54,7 @@ describe('createReviewSession', () => {
     const session = createReviewSession(freshItems(['a', 'b', 'c', 'd']), store, strategy, {
       now,
       requeueGap: 2,
+      shuffle: identity,
     })
 
     await session.answer(false) // wrong on 'a' at position 0
@@ -74,6 +80,7 @@ describe('createReviewSession', () => {
     const session = createReviewSession(freshItems(['a', 'b']), store, strategy, {
       now,
       requeueGap: 2,
+      shuffle: identity,
     })
     await session.answer(true)
     session.next()
@@ -89,6 +96,7 @@ describe('createReviewSession', () => {
     const session = createReviewSession(freshItems(ids), store, strategy, {
       now,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
 
     // The entire unit is introduced at once — no trickle, no session cap.
@@ -127,6 +135,7 @@ describe('createReviewSession', () => {
     const first = createReviewSession(freshItems(ids), store, strategy, {
       now,
       requeueGap: 2,
+      shuffle: identity,
     })
     // Answer everything correctly.
     while (!first.isComplete()) {
@@ -161,6 +170,7 @@ describe('post-session shelf', () => {
     const session = createReviewSession(freshItems(ids), store, strategy, {
       now,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
     while (!session.isComplete()) {
       await session.answer(true)
@@ -189,6 +199,7 @@ describe('post-session shelf', () => {
     const session = createReviewSession(items, store, strategy, {
       now,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
     await session.answer(true)
 
@@ -221,6 +232,7 @@ describe('post-session shelf', () => {
     const session = createReviewSession(freshItems(['a', 'b']), store, strategy, {
       now,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
     const shelf = summarizeShelf(session.itemsNow(), strategy, at(30 * DAY))
     expect(shelf.newCount).toBe(2)
@@ -235,6 +247,7 @@ describe('post-session shelf', () => {
     const immediate = createReviewSession(ended, store, strategy, {
       now: () => NOW,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
     expect(immediate.isComplete()).toBe(true)
 
@@ -243,7 +256,157 @@ describe('post-session shelf', () => {
     const later = createReviewSession(ended, store, strategy, {
       now: () => laterAt,
       requeueGap: SRS.requeueGap,
+      shuffle: identity,
     })
     expect(later.summary().total).toBe(3)
+  })
+})
+
+/**
+ * Presentation order. The plan decides *which* cards and how many; the shuffle
+ * decides only the sequence they are met in. These guard that split — that the
+ * shuffle reaches the whole queue, and that nothing else feels it.
+ */
+describe('presentation order', () => {
+  const MIN = 60 * 1000
+  const DAY = 24 * 60 * MIN
+  const at = (deltaMs: number) => new Date(NOW.getTime() + deltaMs)
+
+  /** A deterministic non-identity reordering — a stand-in for a real shuffle. */
+  const reverse = <U,>(items: readonly U[]): U[] => [...items].reverse()
+
+  const st = (partial: Partial<ProgressState>): ProgressState => ({
+    box: 2,
+    dueAt: NOW,
+    reps: 1,
+    lapses: 0,
+    lastResult: 'correct',
+    lastSeenAt: NOW,
+    ...partial,
+  })
+
+  /** A unit spanning all three buckets: a recent failure, overdue, and new words. */
+  const mixedItems = (): ReviewItem<string>[] => [
+    {
+      id: 'fail',
+      content: 'fail',
+      state: st({ dueAt: at(-MIN), lastResult: 'wrong', lastSeenAt: at(-MIN) }),
+    },
+    { id: 'over1', content: 'over1', state: st({ dueAt: at(-DAY) }) },
+    { id: 'over2', content: 'over2', state: st({ dueAt: at(-2 * DAY) }) },
+    { id: 'new1', content: 'new1', state: null },
+    { id: 'new2', content: 'new2', state: null },
+  ]
+
+  /** Walk a session start to finish, recording the order it presents. */
+  const presented = (session: ReviewSession<string>): string[] => {
+    const seen: string[] = []
+    while (!session.isComplete()) {
+      seen.push(session.current()!.id)
+      session.next()
+    }
+    return seen
+  }
+
+  const open = (
+    items: ReviewItem<string>[],
+    shuffleFn?: <U>(xs: readonly U[]) => U[],
+    store = new FakeStore(),
+  ) =>
+    createReviewSession(items, store, strategy, {
+      now,
+      requeueGap: SRS.requeueGap,
+      ...(shuffleFn ? { shuffle: shuffleFn } : {}),
+    })
+
+  // AC1 + AC2
+  it('presents the plan reordered, with no bucket keeping its reserved slot', () => {
+    const items = mixedItems()
+    const plan = strategy.buildSession(items, { now: NOW })
+    const order = presented(open(items, reverse))
+
+    expect(order).toEqual([...plan.queue].reverse())
+    expect(plan.queue[0]).toBe('fail') // the plan reserves the lead for failures…
+    expect(order[0]).not.toBe('fail') // …the presented order does not
+  })
+
+  // AC3
+  it('shuffles once, over the whole queue, when the session opens', async () => {
+    const items = mixedItems()
+    const plan = strategy.buildSession(items, { now: NOW })
+    const calls: number[] = []
+    const spy = <U,>(xs: readonly U[]): U[] => {
+      calls.push(xs.length)
+      return [...xs]
+    }
+
+    const session = open(items, spy)
+    expect(calls).toEqual([plan.queue.length])
+
+    // Answering, requeueing and advancing must never reshuffle.
+    await session.answer(false)
+    session.next()
+    await session.answer(true)
+    session.next()
+    expect(calls).toEqual([plan.queue.length])
+  })
+
+  // AC4
+  it('changes the sequence only — not membership, counts, or nextDueAt', () => {
+    const plain = open(mixedItems(), identity)
+    const shuffled = open(mixedItems(), reverse)
+
+    expect(shuffled.counts).toEqual(plain.counts)
+    expect(shuffled.nextDueAt).toEqual(plain.nextDueAt)
+    expect(shuffled.summary().total).toBe(plain.summary().total)
+
+    const before = presented(plain)
+    const after = presented(shuffled)
+    expect([...after].sort()).toEqual([...before].sort()) // the same cards…
+    expect(after).not.toEqual(before) // …in a different order
+  })
+
+  // AC5
+  it('leaves the same-session requeue at its fixed gap, unshuffled', async () => {
+    const session = open(mixedItems(), reverse)
+    const wrongId = session.current()!.id
+    await session.answer(false)
+    session.next()
+
+    const rest = presented(session)
+    expect(rest.indexOf(wrongId)).toBe(SRS.requeueGap) // three steps on, as before
+    expect(rest.filter((id) => id === wrongId)).toHaveLength(1) // and only once
+  })
+
+  // AC6
+  it('does not touch memory strength or scheduling', async () => {
+    const runAll = async (shuffleFn: <U>(xs: readonly U[]) => U[]) => {
+      const store = new FakeStore()
+      const session = open(mixedItems(), shuffleFn, store)
+      while (!session.isComplete()) {
+        await session.answer(true)
+        session.next()
+      }
+      return store.rows
+    }
+
+    const plain = await runAll(identity)
+    const shuffled = await runAll(reverse)
+    expect(shuffled.size).toBe(plain.size)
+    for (const [id, state] of plain) {
+      expect(shuffled.get(id)).toEqual(state)
+    }
+  })
+
+  // AC7 — the only test that exercises production's real randomness.
+  it('uses the real shuffle by default and does not repeat an order across launches', () => {
+    const ids = Array.from({ length: 15 }, (_, i) => `w${i}`)
+    const orders = new Set<string>()
+    for (let i = 0; i < 10; i++) {
+      orders.add(presented(open(freshItems(ids))).join(',')) // no shuffle option
+    }
+
+    expect(orders.size).toBeGreaterThan(1) // launches differ from each other
+    expect(orders.has(ids.join(','))).toBe(false) // and never the authored order
   })
 })

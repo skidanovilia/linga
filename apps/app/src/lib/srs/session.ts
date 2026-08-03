@@ -1,8 +1,10 @@
-// A live review session. Session assembly (via the strategy's buildSession) and
-// the same-session requeue of wrong answers both live here, so callers only
-// render the current item and report correct/wrong. State is applied to the
-// local copy immediately for responsiveness, then upserted (last-write-wins).
+// A live review session. Session assembly (via the strategy's buildSession),
+// the shuffle that decides presentation order, and the same-session requeue of
+// wrong answers all live here, so callers only render the current item and
+// report correct/wrong. State is applied to the local copy immediately for
+// responsiveness, then upserted (last-write-wins).
 
+import { shuffle } from '../shuffle'
 import type { ProgressStore } from './store'
 import type { ProgressState, ReviewItem, ReviewStrategy, SessionCounts } from './types'
 
@@ -11,6 +13,8 @@ export interface ReviewSessionOptions {
   now: () => Date
   /** Steps to wait before re-inserting a wrong item (once). */
   requeueGap: number
+  /** Injectable for deterministic tests; defaults to Fisher–Yates. */
+  shuffle?: <U>(items: readonly U[]) => U[]
 }
 
 export interface ReviewSessionSummary {
@@ -54,7 +58,12 @@ export function createReviewSession<T>(
   const local = new Map<string, ProgressState | null>(items.map((i) => [i.id, i.state]))
 
   const plan = strategy.buildSession(items, { now: opts.now() })
-  const queue = [...plan.queue]
+  // Presentation order only. The plan already decided *which* cards and how
+  // many, and its counts/nextDueAt are passed through untouched below — this
+  // reorders what the learner sees and nothing else. Shuffling here, strictly
+  // downstream of the plan and once per session, means no bucket keeps a
+  // reserved slot and no two launches replay the same sequence.
+  const queue = (opts.shuffle ?? shuffle)(plan.queue)
   const requeued = new Set<string>()
 
   let position = 0

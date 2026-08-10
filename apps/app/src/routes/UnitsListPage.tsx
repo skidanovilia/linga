@@ -25,8 +25,11 @@ const TABS: { key: UnitTab; label: string }[] = [
  * the unit's vocabulary memory state (see `lib/srs/tabs`), never by challenge runs
  * or completion badges:
  *  - New       — at least one word has never been introduced.
- *  - Now       — a word is due and none are left to introduce.
- *  - Recently  — everything introduced and everything scheduled ahead.
+ *  - Now       — the unit's review can be started: nothing left to introduce and
+ *                the lowest occupied box fully due. Literally `shelf.enabled`,
+ *                so the tab and the card's launch button cannot disagree.
+ *  - Recently  — introduced, with no review to start: scheduled ahead, or gated
+ *                on a lowest box that is only partly due.
  * The three partition the list: a unit shown at all is shown in exactly one tab
  * (a unit with no vocabulary is shown in none). `runs` still feeds the card, just
  * not the tabs.
@@ -121,7 +124,8 @@ function EmptyTab({
       : 'Sign in to see what’s ready to review.',
     recently: signedIn
       ? // Recently is the leftover bucket, so it is empty only when every unit
-        // still owes something: words to introduce (New) or a review due (Now).
+        // still owes something it can act on: words to introduce (New) or a
+        // review the gate has opened (Now).
         'Every unit still has work waiting — see New and Now.'
       : 'Sign in to track your progress.',
   }

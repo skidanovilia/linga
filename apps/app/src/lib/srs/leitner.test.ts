@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createLeitnerStrategy, type LeitnerConfig } from './leitner'
-import { summarizeShelf } from './shelf'
+import { shelfEntry, summarizeShelf } from './shelf'
 import type { ProgressState, ReviewItem } from './types'
 
 const MIN = 60 * 1000
@@ -162,26 +162,77 @@ describe('buildSession', () => {
 })
 
 describe('summarizeShelf', () => {
-  it('enables on due or new, and is disabled only when neither exists', () => {
-    const due = summarizeShelf([item('a', st({ dueAt: at(-MIN) }))], strategy, NOW)
-    expect(due).toMatchObject({ dueCount: 1, enabled: true })
+  it('enables review once the lowest occupied box is fully due (AC1)', () => {
+    const items = [
+      item('a', st({ box: 1, dueAt: at(-MIN), lastResult: 'correct' })),
+      item('b', st({ box: 1, dueAt: at(-2 * MIN), lastResult: 'correct' })),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    expect(shelf).toMatchObject({ dueCount: 2, newCount: 0, lowestBox: 1, enabled: true })
+    expect(shelf.availableAt).toEqual(at(-MIN)) // the last of the box to ripen
+  })
 
-    const fresh = summarizeShelf([item('a')], strategy, NOW)
-    expect(fresh).toMatchObject({ newCount: 1, enabled: true })
+  it('stays disabled while one item of the lowest box is not yet due (AC4)', () => {
+    const items = [
+      item('ripe', st({ box: 1, dueAt: at(-MIN), lastResult: 'correct' })),
+      item('laggard', st({ box: 1, dueAt: at(2 * MIN), lastResult: 'correct' })),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    // One item *is* available — that has never been enough on its own.
+    expect(shelf).toMatchObject({ dueCount: 1, lowestBox: 1, enabled: false })
+    expect(shelf.availableAt).toEqual(at(2 * MIN))
+  })
 
-    const idle = summarizeShelf(
-      [item('a', st({ box: 2, dueAt: at(DAY), lastResult: 'correct' }))],
-      strategy,
-      NOW,
-    )
-    expect(idle).toMatchObject({ dueCount: 0, newCount: 0, enabled: false })
-    expect(idle.nextDueAt).toEqual(at(DAY))
+  it('ignores higher boxes coming due while the lowest one has not (AC3)', () => {
+    const items = [
+      item('low', st({ box: 1, dueAt: at(2 * MIN), lastResult: 'correct' })),
+      item('high', st({ box: 3, dueAt: at(-DAY), lastResult: 'correct' })),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    expect(shelf).toMatchObject({ dueCount: 1, lowestBox: 1, enabled: false })
+    expect(shelf.availableAt).toEqual(at(2 * MIN)) // box 1's clock, not box 3's
+  })
+
+  it('gates on box 2 once box 1 stands empty (AC3)', () => {
+    const items = [
+      item('a', st({ box: 2, dueAt: at(-MIN), lastResult: 'correct' })),
+      item('b', st({ box: 4, dueAt: at(DAY), lastResult: 'correct' })),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    expect(shelf).toMatchObject({ lowestBox: 2, enabled: true })
+    expect(shelf.availableAt).toEqual(at(-MIN))
+  })
+
+  it('distinguishes the first item to ripen from the moment review opens', () => {
+    const items = [
+      item('soon', st({ box: 1, dueAt: at(2 * MIN), lastResult: 'correct' })),
+      item('later', st({ box: 1, dueAt: at(5 * MIN), lastResult: 'correct' })),
+      item('tomorrow', st({ box: 3, dueAt: at(DAY), lastResult: 'correct' })),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    expect(shelf.nextDueAt).toEqual(at(2 * MIN)) // earliest anywhere on the shelf
+    expect(shelf.availableAt).toEqual(at(5 * MIN)) // when box 1 is fully available
+    expect(shelf.enabled).toBe(false)
+  })
+
+  it('disables review while any word is still to be introduced (AC2)', () => {
+    const items = [
+      item('due', st({ box: 1, dueAt: at(-MIN), lastResult: 'correct' })),
+      item('new'),
+    ]
+    const shelf = summarizeShelf(items, strategy, NOW)
+    // Due work exists, but the unit must be fully introduced first — and there is
+    // no clock to report, because no waiting will open this gate.
+    expect(shelf).toMatchObject({ dueCount: 1, newCount: 1, enabled: false })
+    expect(shelf.availableAt).toBeNull()
   })
 
   it('reports a unit with no vocabulary as empty and disabled', () => {
     const none = summarizeShelf([], strategy, NOW)
     expect(none).toMatchObject({ total: 0, dueCount: 0, newCount: 0, enabled: false })
     expect(none.nextDueAt).toBeNull()
+    expect(none.lowestBox).toBeNull()
+    expect(none.availableAt).toBeNull()
   })
 
   it('counts every item in total, however it is scheduled', () => {
@@ -193,11 +244,48 @@ describe('summarizeShelf', () => {
     expect(summarizeShelf(items, strategy, NOW).total).toBe(3)
   })
 
-  it('keeps a shelf enabled when nothing is due but new items remain', () => {
+  it('shuts the gate again when a wrong answer drops an item to box 1 (AC5)', () => {
     const items = [
-      item('done', st({ box: 2, dueAt: at(DAY), lastResult: 'correct' })),
-      item('new', null),
+      item('kept', st({ box: 2, dueAt: at(-MIN), lastResult: 'correct' })),
+      item('missed', st({ box: 2, dueAt: at(-MIN), lastResult: 'correct' })),
     ]
     expect(summarizeShelf(items, strategy, NOW).enabled).toBe(true)
+
+    // The wrong answer lands the item in box 1, due `wrongShortInterval` out —
+    // which is now the lowest occupied box, and it is not available yet.
+    const after = [
+      items[0],
+      { ...items[1], state: strategy.grade(items[1].state, false, NOW) },
+    ]
+    const shelf = summarizeShelf(after, strategy, NOW)
+    expect(shelf).toMatchObject({ lowestBox: 1, enabled: false })
+    expect(shelf.availableAt).toEqual(at(CONFIG.wrongShortInterval))
+
+    // …and opens once that minute has passed.
+    expect(summarizeShelf(after, strategy, at(CONFIG.wrongShortInterval)).enabled).toBe(true)
+  })
+})
+
+describe('shelfEntry', () => {
+  it('reads a unit with no vocabulary as none', () => {
+    expect(shelfEntry(summarizeShelf([], strategy, NOW))).toBe('none')
+  })
+
+  it('reads any unmet word as an introduction, ahead of due work (AC2)', () => {
+    const items = [item('due', st({ dueAt: at(-MIN), lastResult: 'correct' })), item('new')]
+    expect(shelfEntry(summarizeShelf(items, strategy, NOW))).toBe('introduce')
+  })
+
+  it('reads an open gate as review', () => {
+    const items = [item('a', st({ box: 1, dueAt: at(-MIN), lastResult: 'correct' }))]
+    expect(shelfEntry(summarizeShelf(items, strategy, NOW))).toBe('review')
+  })
+
+  it('reads a shut gate as waiting, whatever is due above it', () => {
+    const items = [
+      item('low', st({ box: 1, dueAt: at(MIN), lastResult: 'correct' })),
+      item('high', st({ box: 3, dueAt: at(-DAY), lastResult: 'correct' })),
+    ]
+    expect(shelfEntry(summarizeShelf(items, strategy, NOW))).toBe('waiting')
   })
 })

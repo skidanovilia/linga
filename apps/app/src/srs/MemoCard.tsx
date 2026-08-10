@@ -1,9 +1,9 @@
 import { motion } from 'motion/react'
 
 interface MemoCardProps {
-  /** Russian text — shown on the front. */
+  /** The prompt side, shown before the flip. Language is the caller's choice. */
   front: string
-  /** Georgian text — shown on the back. */
+  /** The answer side, revealed by the flip. Language is the caller's choice. */
   back: string
   /** When true, the card is rotated to reveal the back. */
   flipped: boolean
@@ -21,11 +21,13 @@ const faceClass =
   'absolute inset-0 flex items-center justify-center rounded-none border-2 md:border-4 border-ink p-6 text-center'
 
 /**
- * A single flip card. The front shows Russian, the back shows Georgian. The
- * flip is a 3D `rotateY` on a `preserve-3d` layer with both faces hidden on
- * their back side; the parent supplies `perspective`. Tapping calls `onFlip`.
- * The tap gesture auto-cancels once a drag begins on an ancestor (>3px move),
- * so flipping and swiping don't conflict.
+ * A single flip card over two already-resolved strings: the card is blind to
+ * which language is on which side — callers decide that (scheduled review
+ * prompts in Russian, free practice in Georgian). The flip is a 3D `rotateY`
+ * on a `preserve-3d` layer with both faces hidden on their back side; the
+ * parent supplies `perspective`. Tapping calls `onFlip`. The tap gesture
+ * auto-cancels once a drag begins on an ancestor (>3px move), so flipping and
+ * swiping don't conflict.
  */
 export function MemoCard({ front, back, flipped, onFlip, elevated = true }: MemoCardProps) {
   return (

@@ -57,9 +57,9 @@ export type Challenge =
 export interface VocabEntry {
   /** Content row UUID — the stable key for the memo-card review shelf. */
   id: string
-  /** Georgian — shown on the card's back. */
+  /** Georgian — the prompt side in free practice, the answer in scheduled review. */
   ka: string
-  /** Russian — shown on the card's front. */
+  /** Russian — the prompt side in scheduled review, the answer in free practice. */
   ru: string
 }
 

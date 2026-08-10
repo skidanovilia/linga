@@ -11,9 +11,9 @@ import { Card } from '../components/Card'
 
 /**
  * Free vocabulary practice (`/practice/vocab`) — a cross-unit shuffle game.
- * Unlike `CardReviewPage`, there's no scheduled shelf here: the pool, order,
- * and per-card side are all decided fresh each session and nothing is
- * persisted — swiping never touches box/due state or `vocab_progress`.
+ * Unlike `CardReviewPage`, there's no scheduled shelf here: the pool and order
+ * are decided fresh each session, every card is prompted Georgian-side up, and
+ * nothing is persisted — swiping never touches box/due state or `vocab_progress`.
  */
 export function FreeVocabPracticePage() {
   const units = useLoaderData() as Unit[]

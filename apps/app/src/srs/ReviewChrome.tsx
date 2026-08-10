@@ -19,9 +19,13 @@ export function ReviewHeader({ unitTitle, label }: { unitTitle: string; label: s
 
 /**
  * The explicit "nothing to do" state — not an error, not a refill. Covers two
- * distinct cases that must not be confused: a shelf with nothing due and nothing
- * new left to introduce, and a unit that has no vocabulary in the first place.
+ * distinct cases that must not be confused: a shelf with nothing available to
+ * review right now, and a unit that has no vocabulary in the first place.
  * Congratulating someone for clearing a shelf they never had reads as a bug.
+ *
+ * `nextDueAt` is when something can actually be reviewed again — for a gated
+ * shelf that is when its lowest box has fully ripened, which may be later than
+ * the first individual card's due time.
  */
 export function ReviewEmptyState({
   nextDueAt,
@@ -58,9 +62,10 @@ export function ReviewEmptyState({
 
 /**
  * End-of-session summary. The score always shows; the repeat entry is offered
- * only when `canRepeat` — for a scheduled shelf that means something is due
- * *now*, so finishing a run never invites a re-run of the cards just cleared.
- * When it is withheld, the card says when the next review actually lands.
+ * only when `canRepeat` — for a scheduled shelf that means review may be entered
+ * again *now*, so finishing a run never invites a re-run of the cards just
+ * cleared, nor a run the gate would turn away. When it is withheld, the card says
+ * when the next review actually lands.
  *
  * Both props default to the unconditional behaviour for free practice, which has
  * no boxes, no due dates and nothing persisted: there is no schedule to consult,

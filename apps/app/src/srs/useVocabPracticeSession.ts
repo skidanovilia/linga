@@ -5,6 +5,7 @@ import { toReviewItems } from '../lib/srs/store'
 import { useAuth } from '../auth/useAuth'
 import { cardAdapter } from './adapters'
 import { shuffle } from '../lib/shuffle'
+import { toPracticeCards } from './practiceCards'
 import type { DeckCard } from './CardReviewDeck'
 
 /** How many cards a free-practice session draws from the candidate pool. */
@@ -43,10 +44,11 @@ interface Session {
 /**
  * Drives one free-practice session across every unit: the candidate pool is
  * every vocab item with existing memo progress (AC1), pulled from all units
- * (AC2), of which up to 20 are drawn at random (AC3) with each card's shown
- * side chosen independently (AC4). Unlike `useReviewSession`, this never
- * reads/writes box or due-date state and never calls `upsertProgress` — an
- * answer only updates local counters.
+ * (AC2), of which up to 20 are drawn at random (AC3). Which side each card
+ * shows is *not* drawn: `toPracticeCards` always puts the Georgian term on
+ * the prompt side. Unlike `useReviewSession`, this never reads/writes box or
+ * due-date state and never calls `upsertProgress` — an answer only updates
+ * local counters.
  */
 export function useVocabPracticeSession(units: Unit[]): VocabPracticeSessionState {
   const { user } = useAuth()
@@ -73,14 +75,7 @@ export function useVocabPracticeSession(units: Unit[]): VocabPracticeSessionStat
         if (!active) return
         const pool = toReviewItems(items, progress).filter((item) => item.state !== null)
         const chosen = shuffle(pool).slice(0, Math.min(SESSION_SIZE, pool.length))
-        const cards: DeckCard[] = chosen.map((item) => {
-          const showKaFirst = Math.random() < 0.5
-          return {
-            id: item.id,
-            front: showKaFirst ? item.content.ka : item.content.ru,
-            back: showKaFirst ? item.content.ru : item.content.ka,
-          }
-        })
+        const cards = toPracticeCards(chosen)
         sessionRef.current = { cards, position: 0, correct: 0, answered: 0 }
         setPhase(cards.length === 0 ? 'empty' : 'playing')
       })

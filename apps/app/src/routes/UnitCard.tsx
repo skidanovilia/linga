@@ -2,7 +2,7 @@ import { Icon } from '@mdi/react'
 import { mdiCheck, mdiLock } from '@mdi/js'
 import type { User } from '@supabase/supabase-js'
 import type { Unit } from '../types/domain'
-import type { ShelfStatus } from '../lib/srs/shelf'
+import { shelfEntry, type ShelfEntry, type ShelfStatus } from '../lib/srs/shelf'
 import type {
   ChallengeRunContextValue,
   ModuleStatus,
@@ -55,11 +55,7 @@ export function UnitCard({
                 Grammar
               </ButtonLink>
             )}
-            <ShelfButton
-              to={`/units/${unit.id}/review/cards`}
-              label="Review cards"
-              status={shelf}
-            />
+            <ShelfButton to={`/units/${unit.id}/review/cards`} status={shelf} />
             <ChallengeEntry
               to={`/units/${unit.id}/challenges`}
               ready={runs.ready}
@@ -78,37 +74,34 @@ export function UnitCard({
 }
 
 /**
- * The memo-cards launch button, its enabled/disabled state derived entirely from
- * the SRS engine's shelf summary. `undefined` status = still loading. A disabled
- * button is non-interactive and shows either the "all reviewed — next due at T"
- * state or, for a unit that has no vocabulary at all, "no cards yet"; its dashed
- * border + lock icon + flattened shadow carry the disabled state without relying
- * on color alone. Cards are never gated by challenge state.
+ * The memo-cards entry — one button whose *purpose*, not just its enabled state,
+ * is derived entirely from the SRS engine's shelf summary (`undefined` status =
+ * still loading). It is the introduction while words remain unmet and the
+ * scheduled review afterwards, because a unit must be fully introduced before its
+ * gate is even consulted; the route behind it reads the same `shelfEntry`, so the
+ * two can never disagree.
+ *
+ * A disabled button is non-interactive and carries that with a dashed border +
+ * lock icon + flattened shadow rather than color alone. It covers two cases the
+ * hint must keep apart: a unit that has no vocabulary at all, and a shelf whose
+ * lowest box has not fully ripened. Cards are never gated by challenge state.
  */
-function ShelfButton({
-  to,
-  label,
-  status,
-}: {
-  to: string
-  label: string
-  status: ShelfStatus | undefined
-}) {
+function ShelfButton({ to, status }: { to: string; status: ShelfStatus | undefined }) {
   if (!status) {
+    // Loading: which of the two this entry is cannot be known yet, so it shows
+    // the steady-state label a fully-introduced unit carries.
     return (
       <span className="w-full rounded-none border-2 border-dashed border-ink/30 bg-muted px-4 py-2 text-center font-display text-sm font-bold uppercase tracking-wide text-ink/30">
-        {label}
+        Review cards
       </span>
     )
   }
 
-  if (!status.enabled) {
-    // A unit with no vocabulary is not a finished one — don't claim a shelf
-    // that never existed has been reviewed.
-    const hint =
-      status.total === 0
-        ? 'No cards yet'
-        : `All reviewed · next ${formatDue(status.nextDueAt)}`
+  const entry = shelfEntry(status)
+  const label = entry === 'introduce' ? 'Learn new words' : 'Review cards'
+  const hint = shelfHint(entry, status)
+
+  if (entry === 'none' || entry === 'waiting') {
     return (
       <button
         type="button"
@@ -130,17 +123,35 @@ function ShelfButton({
     <ButtonLink to={to} variant="blue" className="w-full flex-col text-sm">
       {label}
       <span className="mt-0.5 block font-content text-[11px] font-normal normal-case tracking-normal text-white/80">
-        {shelfHint(status)}
+        {hint}
       </span>
     </ButtonLink>
   )
 }
 
-function shelfHint(status: ShelfStatus): string {
-  const parts: string[] = []
-  if (status.dueCount > 0) parts.push(`${status.dueCount} due`)
-  if (status.newCount > 0) parts.push(`${status.newCount} new`)
-  return parts.join(' · ')
+/**
+ * The line under the label — the shelf's state in a handful of words. There is no
+ * mixed "due · new" case any more: while anything is new the entry is purely an
+ * introduction, so each state has exactly one thing to say.
+ */
+function shelfHint(entry: ShelfEntry, status: ShelfStatus): string {
+  switch (entry) {
+    case 'none':
+      // A unit with no vocabulary is not a finished one — don't claim a shelf
+      // that never existed has been reviewed.
+      return 'No cards yet'
+    case 'introduce':
+      return `${status.newCount} new`
+    case 'review':
+      return `${status.dueCount} due`
+    case 'waiting':
+      // Waiting on the clock. "All reviewed" would be a lie when items *are*
+      // due — they simply sit above a box that has not ripened, and nothing is
+      // available to review until it does. Either way the wait is measured to
+      // `availableAt` (when the gate opens), never to `nextDueAt` (the first
+      // item to ripen, which on its own opens nothing).
+      return `${status.dueCount === 0 ? 'All reviewed' : 'Nothing to review'} · next ${formatDue(status.availableAt)}`
+  }
 }
 
 /**
